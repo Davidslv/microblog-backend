@@ -147,5 +147,47 @@ tail -f log/development.log | grep -E "Completed|Error|Slow"
 - Cookies are extracted from login response
 - Make sure dev login route is working
 
+## wrk Testing (Simple Baseline)
+
+**Simple Public Feed Test:**
+```bash
+# No authentication - just public feed
+wrk -t12 -c150 -d30s http://localhost:3000/
+
+# Or use simple script
+wrk -t12 -c150 -d30s -s load_test/wrk_simple.lua http://localhost:3000/
+```
+
+**Authenticated Feed Test:**
+```bash
+# Tests authenticated feeds with filters (basic cookie handling)
+wrk -t12 -c150 -d30s -s load_test/wrk_feed.lua http://localhost:3000/
+```
+
+**What wrk_feed.lua Tests:**
+- ✅ Login via dev route
+- ✅ Extracts session cookies
+- ✅ Tests filter options (timeline, mine, following)
+- ✅ Uses cookies for authenticated requests
+
+**Limitations:**
+- ⚠️ Cookie handling is basic (wrk limitation)
+- ⚠️ No POST requests (CSRF tokens complex in wrk)
+- ⚠️ No pagination testing
+- ⚠️ For comprehensive testing, use k6 instead
+
+**When to Use wrk:**
+- Quick baseline throughput testing
+- Simple public feed performance
+- Fast, lightweight testing
+
+**When to Use k6:**
+- Comprehensive feature testing
+- Authenticated user scenarios
+- POST requests (with CSRF)
+- Pagination testing
+- Realistic user behavior
+
 See `docs/LOAD_TESTING.md` for detailed documentation.
 See `docs/TEST_SCRIPT_ANALYSIS.md` for analysis of what was fixed.
+See `docs/WRK_RESULTS_EXPLANATION.md` for interpreting wrk results.
