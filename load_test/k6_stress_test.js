@@ -27,36 +27,36 @@ const NUM_USERS = parseInt(__ENV.NUM_USERS || '1000');
 
 export default function () {
   const userId = Math.floor(Math.random() * NUM_USERS) + 1;
-  
+
   // Login
   const loginRes = http.get(`${BASE_URL}/dev/login/${userId}`, {
     tags: { name: 'Login' },
     timeout: '10s',
   });
-  
+
   if (!check(loginRes, { 'login successful': (r) => r.status === 200 || r.status === 302 })) {
     errorRate.add(1);
     return;
   }
-  
+
   const cookies = loginRes.cookies;
-  
+
   // Continuously hit feed page (most stressful endpoint)
   const feedRes = http.get(`${BASE_URL}/`, {
     cookies: cookies,
     tags: { name: 'FeedPage' },
     timeout: '10s',
   });
-  
+
   const success = check(feedRes, {
     'feed status 200': (r) => r.status === 200,
     'feed response time < 5s': (r) => r.timings.duration < 5000,
   });
-  
+
   if (!success) {
     errorRate.add(1);
   }
-  
+
   // Short sleep to maximize load
   sleep(0.5);
 }

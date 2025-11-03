@@ -71,25 +71,25 @@ monitor_slow_queries() {
 # Main monitoring loop
 main() {
   check_server
-  
+
   while true; do
     clear
     echo "=========================================="
     echo "Load Test Monitor - $(date '+%H:%M:%S')"
     echo "=========================================="
     echo ""
-    
+
     monitor_rails
     monitor_database
     count_connections
     monitor_errors
     monitor_slow_queries
-    
+
     echo ""
     echo "=========================================="
     echo "Press Ctrl+C to stop"
     echo ""
-    
+
     sleep 2
   done
 }

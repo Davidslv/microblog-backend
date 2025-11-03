@@ -28,23 +28,23 @@ const NUM_USERS = parseInt(__ENV.NUM_USERS || '1000');
 export default function () {
   // Random user for this virtual user
   const userId = Math.floor(Math.random() * NUM_USERS) + 1;
-  
+
   // Login as user
   const loginRes = http.get(`${BASE_URL}/dev/login/${userId}`, {
     tags: { name: 'Login' },
   });
-  
+
   const loginSuccess = check(loginRes, {
     'login successful': (r) => r.status === 302 || r.status === 200,
   });
-  
+
   if (!loginSuccess) {
     errorRate.add(1);
     return;
   }
-  
+
   const cookies = loginRes.cookies;
-  
+
   // Primary test: Feed page (the critical bottleneck)
   const startTime = Date.now();
   const feedRes = http.get(`${BASE_URL}/`, {
@@ -53,21 +53,21 @@ export default function () {
   });
   const duration = Date.now() - startTime;
   feedPageTime.add(duration);
-  
+
   const feedSuccess = check(feedRes, {
     'feed page status 200': (r) => r.status === 200,
     'feed page has posts': (r) => r.body.includes('post') || r.body.length > 500,
     'feed page response time acceptable': (r) => r.timings.duration < 1000,
   });
-  
+
   if (!feedSuccess) {
     errorRate.add(1);
     console.log(`Feed page failed for user ${userId}: ${feedRes.status} (${duration}ms)`);
   }
-  
+
   // Simulate user reading time (viewing feed)
   sleep(Math.random() * 3 + 2); // 2-5 seconds
-  
+
   // Occasionally view a specific post
   if (Math.random() < 0.3) { // 30% chance
     const postId = Math.floor(Math.random() * 10000) + 1;
@@ -75,11 +75,11 @@ export default function () {
       cookies: cookies,
       tags: { name: 'PostView' },
     });
-    
+
     check(postRes, {
       'post view status ok': (r) => r.status === 200 || r.status === 404,
     });
-    
+
     sleep(1);
   }
 }

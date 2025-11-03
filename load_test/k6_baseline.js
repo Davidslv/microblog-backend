@@ -27,48 +27,48 @@ const NUM_USERS = parseInt(__ENV.NUM_USERS || '100');
 export default function () {
   // Random user for this virtual user
   const userId = Math.floor(Math.random() * NUM_USERS) + 1;
-  
+
   // Login as user (dev login route)
   const loginRes = http.get(`${BASE_URL}/dev/login/${userId}`, {
     tags: { name: 'Login' },
   });
-  
+
   const loginSuccess = check(loginRes, {
     'login successful': (r) => r.status === 302 || r.status === 200,
   });
-  
+
   if (!loginSuccess) {
     errorRate.add(1);
     return;
   }
-  
+
   // Extract cookies from login
   const cookies = loginRes.cookies;
-  
+
   // Test feed page (most critical endpoint)
   const feedRes = http.get(`${BASE_URL}/`, {
     cookies: cookies,
     tags: { name: 'FeedPage' },
   });
-  
+
   check(feedRes, {
     'feed page status 200': (r) => r.status === 200,
     'feed page has content': (r) => r.body.length > 1000,
   }) || errorRate.add(1);
-  
+
   sleep(1);
-  
+
   // Test viewing a random post
   const postId = Math.floor(Math.random() * 1000) + 1;
   const postRes = http.get(`${BASE_URL}/posts/${postId}`, {
     cookies: cookies,
     tags: { name: 'PostView' },
   });
-  
+
   check(postRes, {
     'post view status 200': (r) => r.status === 200 || r.status === 404,
   }) || errorRate.add(1);
-  
+
   sleep(2);
 }
 

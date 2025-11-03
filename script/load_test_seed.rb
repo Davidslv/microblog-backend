@@ -48,7 +48,7 @@ NUM_USERS.times do |i|
     password_confirmation: "password123"
   )
   users << user
-  
+
   if (i + 1) % 100 == 0
     puts "  Created #{i + 1} users..."
   end
@@ -65,34 +65,34 @@ users.each_with_index do |user, user_index|
   POSTS_PER_USER.times do |post_index|
     # Determine if this is a reply
     is_reply = (post_index > 0 && rand < REPLY_PROBABILITY && top_level_posts.any?)
-    
+
     parent_id = nil
     if is_reply
       # Reply to a random existing post
       parent_post = top_level_posts.sample
       parent_id = parent_post.id
     end
-    
+
     # Create post with realistic content
     content = if is_reply
       "Reply to post #{parent_id}: This is reply #{post_index} from #{user.username}"
     else
       "Post #{post_index + 1} from #{user.username}: #{SecureRandom.alphanumeric(50)}"
     end
-    
+
     # Ensure content is within limit
     content = content[0..199]
-    
+
     post = Post.create!(
       author: user,
       content: content,
       parent_id: parent_id,
       created_at: rand(365.days).seconds.ago  # Random time in last year
     )
-    
+
     top_level_posts << post unless is_reply
     posts_created += 1
-    
+
     if posts_created % 1000 == 0
       puts "  Created #{posts_created} posts..."
     end
@@ -107,10 +107,10 @@ total_follows = 0
 users.each_with_index do |follower, follower_index|
   # Each user follows a random number of other users
   num_follows = rand(MIN_FOLLOWS..MAX_FOLLOWS)
-  
+
   # Get random users to follow (excluding self)
   users_to_follow = (users - [follower]).sample(num_follows)
-  
+
   users_to_follow.each do |followed|
     begin
       Follow.create!(
@@ -123,7 +123,7 @@ users.each_with_index do |follower, follower_index|
       # Already following, skip
     end
   end
-  
+
   if (follower_index + 1) % 100 == 0
     puts "  Processed #{follower_index + 1} users, created #{total_follows} follows..."
   end

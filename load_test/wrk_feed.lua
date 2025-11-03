@@ -11,7 +11,7 @@ request = function()
    -- Login
    local loginPath = "/dev/login/" .. userId
    local loginRes = wrk.format("GET", loginPath)
-   
+
    -- Return login request
    return loginRes
 end
@@ -20,7 +20,7 @@ end
 response = function(status, headers, body)
    -- Note: wrk doesn't easily handle cookies, so this is a simplified version
    -- For proper cookie handling, use k6 instead
-   
+
    -- For now, just make feed request (will work if dev login doesn't require cookies)
    if status == 200 or status == 302 then
       local feedReq = wrk.format("GET", "/")

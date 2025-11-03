@@ -30,25 +30,25 @@ const NUM_POSTS = parseInt(__ENV.NUM_POSTS || '100000');
 
 export default function () {
   const userId = Math.floor(Math.random() * NUM_USERS) + 1;
-  
+
   // Login
   const loginRes = http.get(`${BASE_URL}/dev/login/${userId}`, {
     tags: { name: 'Login' },
   });
-  
+
   if (!check(loginRes, { 'login successful': (r) => r.status === 200 || r.status === 302 })) {
     errorRate.add(1);
     return;
   }
-  
+
   const cookies = loginRes.cookies;
-  
+
   // Simulate realistic user session
   const actions = Math.floor(Math.random() * 8) + 3; // 3-10 actions per session
-  
+
   for (let i = 0; i < actions; i++) {
     const action = Math.random();
-    
+
     // 50% - View feed (most common)
     if (action < 0.5) {
       feedRequests.add(1);
@@ -56,11 +56,11 @@ export default function () {
         cookies: cookies,
         tags: { name: 'FeedPage' },
       });
-      
+
       check(feedRes, {
         'feed status 200': (r) => r.status === 200,
       }) || errorRate.add(1);
-      
+
       sleep(Math.random() * 5 + 3); // 3-8 seconds reading
     }
     // 30% - View specific post
@@ -71,11 +71,11 @@ export default function () {
         cookies: cookies,
         tags: { name: 'PostView' },
       });
-      
+
       check(postRes, {
         'post status ok': (r) => r.status === 200 || r.status === 404,
       });
-      
+
       sleep(Math.random() * 3 + 2); // 2-5 seconds reading
     }
     // 12% - View user profile
@@ -85,42 +85,42 @@ export default function () {
         cookies: cookies,
         tags: { name: 'UserProfile' },
       });
-      
+
       check(profileRes, {
         'profile status ok': (r) => r.status === 200 || r.status === 404,
       });
-      
+
       sleep(1);
     }
     // 5% - Create post
     else if (action < 0.97) {
       createRequests.add(1);
       const content = `Test post ${Date.now()} - ${Math.random().toString(36).substring(7)}`;
-      
+
       const createRes = http.post(`${BASE_URL}/posts`, {
         cookies: cookies,
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: `post[content]=${encodeURIComponent(content)}`,
         tags: { name: 'PostCreate' },
       });
-      
+
       check(createRes, {
         'create status redirect': (r) => r.status === 302 || r.status === 200,
       }) || errorRate.add(1);
-      
+
       sleep(2);
     }
     // 3% - Follow/unfollow
     else {
       const targetUserId = Math.floor(Math.random() * NUM_USERS) + 1;
-      
+
       if (Math.random() < 0.5) {
         // Follow
         const followRes = http.post(`${BASE_URL}/follow/${targetUserId}`, {
           cookies: cookies,
           tags: { name: 'Follow' },
         });
-        
+
         check(followRes, {
           'follow status ok': (r) => r.status === 302 || r.status === 200,
         });
@@ -130,16 +130,16 @@ export default function () {
           cookies: cookies,
           tags: { name: 'Unfollow' },
         });
-        
+
         check(unfollowRes, {
           'unfollow status ok': (r) => r.status === 302 || r.status === 200,
         });
       }
-      
+
       sleep(1);
     }
   }
-  
+
   // Session ends
   sleep(Math.random() * 10 + 5); // 5-15 seconds between sessions
 }
