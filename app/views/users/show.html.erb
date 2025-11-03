@@ -1,59 +1,58 @@
-<!-- User Profile Card -->
-<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-6">
-  <h1 class="text-3xl font-bold text-gray-900 mb-4"><%= @user.username %></h1>
+<!-- User Profile Header -->
+<div class="border-b border-gray-200 pb-6">
+  <div class="px-4 pt-4">
+    <h1 class="text-2xl font-bold text-gray-900 mb-2"><%= @user.username %></h1>
 
-  <% if @user.description.present? %>
-    <p class="text-gray-600 text-lg mb-6 leading-relaxed"><%= @user.description %></p>
-  <% end %>
+    <% if @user.description.present? %>
+      <p class="text-gray-600 mb-4 leading-relaxed"><%= @user.description %></p>
+    <% end %>
 
-  <!-- Stats -->
-  <div class="flex gap-8 mb-6 pb-6 border-b border-gray-200">
-    <div class="flex flex-col">
-      <strong class="text-2xl font-bold text-gray-900"><%= @posts.count %></strong>
-      <span class="text-sm text-gray-500 mt-1">Posts</span>
+    <!-- Stats -->
+    <div class="flex gap-6 text-sm">
+      <div class="flex items-center gap-1">
+        <span class="font-bold text-gray-900"><%= @posts.count %></span>
+        <span class="text-gray-500">Posts</span>
+      </div>
+      <div class="flex items-center gap-1">
+        <span class="font-bold text-gray-900"><%= @followers_count %></span>
+        <span class="text-gray-500">Followers</span>
+      </div>
+      <div class="flex items-center gap-1">
+        <span class="font-bold text-gray-900"><%= @following_count %></span>
+        <span class="text-gray-500">Following</span>
+      </div>
     </div>
-    <div class="flex flex-col">
-      <strong class="text-2xl font-bold text-gray-900"><%= @followers_count %></strong>
-      <span class="text-sm text-gray-500 mt-1">Followers</span>
-    </div>
-    <div class="flex flex-col">
-      <strong class="text-2xl font-bold text-gray-900"><%= @following_count %></strong>
-      <span class="text-sm text-gray-500 mt-1">Following</span>
-    </div>
+
+    <!-- Follow Button -->
+    <% if logged_in? && current_user != @user %>
+      <div class="mt-4">
+        <% if current_user.following?(@user) %>
+          <%= button_to "Following", follow_path(@user), method: :delete,
+              class: "px-6 py-2 bg-black text-white font-bold rounded-full hover:bg-gray-800 transition-colors" %>
+        <% else %>
+          <%= button_to "Follow", follow_path(@user), method: :post,
+              class: "px-6 py-2 bg-black text-white font-bold rounded-full hover:bg-gray-800 transition-colors" %>
+        <% end %>
+      </div>
+    <% end %>
   </div>
-
-  <!-- Follow Button -->
-  <% if logged_in? && current_user != @user %>
-    <div class="mt-4">
-      <% if current_user.following?(@user) %>
-        <%= button_to "Unfollow", follow_path(@user), method: :delete,
-            class: "px-6 py-2 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-all shadow-sm hover:shadow-md" %>
-      <% else %>
-        <%= button_to "Follow", follow_path(@user), method: :post,
-            class: "px-6 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all shadow-sm hover:shadow-md transform hover:-translate-y-0.5" %>
-      <% end %>
-    </div>
-  <% end %>
 </div>
 
 <!-- User Posts -->
-<div>
-  <h2 class="text-2xl font-bold text-gray-900 mb-6">Posts</h2>
+<div class="divide-y divide-gray-200">
   <% if @posts.any? %>
-    <div class="space-y-4">
-      <% @posts.each do |post| %>
-        <%= render 'posts/post', post: post %>
-      <% end %>
-    </div>
+    <% @posts.each do |post| %>
+      <%= render 'posts/post', post: post %>
+    <% end %>
 
     <% if @has_next %>
-      <div class="flex justify-center pt-6">
+      <div class="flex justify-center py-8">
         <%= link_to "Load More", user_path(@user, cursor: @next_cursor),
-            class: "px-6 py-2 bg-white border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all shadow-sm hover:shadow-md" %>
+            class: "px-6 py-2 text-blue-600 hover:bg-blue-50 font-medium rounded-full transition-colors" %>
       </div>
     <% end %>
   <% else %>
-    <div class="text-center py-12 bg-white rounded-xl shadow-sm border border-gray-200">
+    <div class="text-center py-16 px-4">
       <p class="text-gray-500 text-lg">No posts yet.</p>
     </div>
   <% end %>

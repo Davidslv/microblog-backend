@@ -1,53 +1,66 @@
 <!-- Post Detail -->
-<div class="mb-6">
+<div class="border-b border-gray-200">
   <%= render 'posts/post', post: @post, show_replies: false %>
 </div>
 
 <% if logged_in? %>
   <!-- Reply Form -->
-  <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6" data-controller="character-counter">
-    <h3 class="text-lg font-semibold text-gray-900 mb-4">Reply</h3>
-    <%= form_with model: @reply, url: posts_path, local: true, class: "space-y-4" do |f| %>
-      <%= f.hidden_field :parent_id %>
-      <%= f.text_area :content,
-          placeholder: "Write a reply... (max 200 characters)",
-          maxlength: 200,
-          rows: 3,
-          class: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-all",
-          data: { character_counter_target: "input" } %>
-      <div class="flex justify-between items-center">
-        <span class="text-sm text-gray-500">
-          <span data-character-counter-target="counter" class="font-medium">0</span>/200
-        </span>
-        <%= f.submit "Reply",
-            class: "px-6 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all shadow-sm hover:shadow-md transform hover:-translate-y-0.5" %>
+  <div class="border-b border-gray-200 px-4 py-3" data-controller="character-counter">
+    <div class="flex gap-3">
+      <!-- Avatar -->
+      <div class="flex-shrink-0">
+        <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-lg">
+          <%= current_user.username.first.upcase %>
+        </div>
       </div>
-    <% end %>
+
+      <!-- Form -->
+      <div class="flex-1">
+        <div class="mb-2 text-sm text-gray-500">
+          Replying to <span class="text-blue-600"><%= @post.author_name %></span>
+        </div>
+        <%= form_with model: @reply, url: posts_path, local: true, class: "space-y-3" do |f| %>
+          <%= f.hidden_field :parent_id %>
+          <%= f.text_area :content,
+              placeholder: "Post your reply",
+              maxlength: 200,
+              rows: 3,
+              class: "w-full text-xl text-gray-900 placeholder-gray-500 border-0 resize-none focus:ring-0 focus:outline-none",
+              data: { character_counter_target: "input" } %>
+          <div class="flex justify-between items-center pt-3 border-t border-gray-200">
+            <span class="text-sm text-gray-500">
+              <span data-character-counter-target="counter" class="font-medium">0</span>/200
+            </span>
+            <%= f.submit "Reply",
+                class: "px-6 py-2 bg-black text-white font-bold rounded-full hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" %>
+          </div>
+        <% end %>
+      </div>
+    </div>
   </div>
 <% end %>
 
 <!-- Replies Section -->
 <% if @replies.any? %>
-  <div class="mt-8">
-    <h3 class="text-xl font-semibold text-gray-900 mb-4">Replies</h3>
-    <div class="space-y-4">
-      <% @replies.each do |reply| %>
-        <%= render 'posts/post', post: reply %>
-      <% end %>
-    </div>
-
-    <% if @replies_has_next %>
-      <div class="flex justify-center pt-6">
-        <%= link_to "Load More Replies", post_path(@post, replies_cursor: @replies_next_cursor),
-            class: "px-6 py-2 bg-white border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all shadow-sm hover:shadow-md" %>
-      </div>
+  <div class="divide-y divide-gray-200">
+    <% @replies.each do |reply| %>
+      <%= render 'posts/post', post: reply %>
     <% end %>
   </div>
+
+  <% if @replies_has_next %>
+    <div class="flex justify-center py-8 border-t border-gray-200">
+      <%= link_to "Load More Replies", post_path(@post, replies_cursor: @replies_next_cursor),
+          class: "px-6 py-2 text-blue-600 hover:bg-blue-50 font-medium rounded-full transition-colors" %>
+    </div>
+  <% end %>
 <% else %>
-  <div class="text-center py-12 bg-white rounded-xl shadow-sm border border-gray-200 mt-8">
+  <div class="text-center py-16 px-4 border-t border-gray-200">
     <p class="text-gray-500 text-lg">No replies yet.</p>
   </div>
 <% end %>
 
-<%= link_to "← Back to Timeline", posts_path,
-    class: "inline-block mt-8 text-blue-600 hover:text-blue-700 font-medium hover:underline transition-colors" %>
+<div class="px-4 py-4 border-t border-gray-200">
+  <%= link_to "← Back to Timeline", posts_path,
+      class: "text-blue-600 hover:text-blue-700 font-medium hover:underline transition-colors" %>
+</div>
