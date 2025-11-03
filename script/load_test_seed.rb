@@ -62,7 +62,7 @@ posts_created = 0
 top_level_posts = []
 
 users.each_with_index do |user, user_index|
-  POSTS_PER_USER.times do |post_index|
+  rand(POSTS_PER_USER).times do |post_index|
     # Determine if this is a reply
     is_reply = (post_index > 0 && rand < REPLY_PROBABILITY && top_level_posts.any?)
 
