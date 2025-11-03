@@ -3,222 +3,271 @@
 ## Your Test Command
 
 ```bash
-wrk -t12 -c150 -d30s -s load_test/wrk_feed.lua http://localhost:3000/
+wrk -t8 -c250 -d30s -s load_test/wrk_feed.lua http://localhost:3000/
 ```
 
 **Parameters:**
-- `-t12`: 12 threads (worker threads)
-- `-c150`: 150 concurrent connections
+- `-t8`: 8 threads (worker threads)
+- `-c250`: 250 concurrent connections (simulating 250 simultaneous users)
 - `-d30s`: Duration of 30 seconds
-- `-s load_test/wrk_feed.lua`: Custom Lua script for request logic
+- `-s load_test/wrk_feed.lua`: Custom Lua script (handles login + authenticated feeds)
 - `http://localhost:3000/`: Target URL
 
 ## Your Results Breakdown
 
 ```
 Running 30s test @ http://localhost:3000/
-  12 threads and 150 connections
+  8 threads and 250 connections
 ```
 
 **Test Configuration:**
-- 12 worker threads handling requests
-- 150 concurrent connections (simulating 150 simultaneous users)
+- 8 worker threads handling requests
+- 250 concurrent connections (simulating 250 simultaneous users)
 - 30 seconds test duration
 
 ### Thread Stats
 
 ```
 Thread Stats   Avg      Stdev     Max   +/- Stdev
-    Latency   522.89ms   53.82ms 664.54ms   83.46%
-    Req/Sec    30.71     20.19   120.00     63.73%
+    Latency     1.10s   552.89ms   1.97s    56.36%
+    Req/Sec     5.70      3.97    30.00     71.28%
 ```
 
 **Latency (Response Time):**
-- **Avg: 522.89ms** - Average response time per request
-- **Stdev: 53.82ms** - Standard deviation (how much variation)
-- **Max: 664.54ms** - Slowest request
-- **+/- Stdev: 83.46%** - 83.46% of requests were within 1 standard deviation
+- **Avg: 1.10s** - Average response time per request
+- **Stdev: 552.89ms** - High variation (very inconsistent)
+- **Max: 1.97s** - Slowest request
+- **+/- Stdev: 56.36%** - Only 56% of requests within 1 standard deviation (very inconsistent)
 
 **Interpretation:**
-- Average response time of ~523ms is **moderate** for a feed page
-- Most requests (83%) fall within a tight range (523ms ± 54ms)
-- Maximum latency of 664ms is reasonable under this load
-- **Note**: This is testing the feed page which is the most expensive query
+- ⚠️ **Very high latency** - 1.1 seconds average is poor
+- ⚠️ **High variation** - Only 56% within range (inconsistent performance)
+- 🔴 **Maximum latency of 1.97s** - Some requests taking almost 2 seconds
+- **Comparison to previous test**: 523ms → 1,100ms (2x worse!)
 
 **Req/Sec (Requests Per Second per Thread):**
-- **Avg: 30.71** - Average requests per second per thread
-- **Stdev: 20.19** - High variation (some threads handling more/less)
-- **Max: 120.00** - Peak requests per second per thread
-- **+/- Stdev: 63.73%** - 63.73% within 1 standard deviation
+- **Avg: 5.70** - Average requests per second per thread
+- **Stdev: 3.97** - Very high variation
+- **Max: 30.00** - Peak requests per second per thread
+- **+/- Stdev: 71.28%** - 71% within range (better than latency, but still high variation)
 
 **Interpretation:**
-- Each thread handles ~31 requests/second on average
-- Significant variation between threads (63.73% within range)
-- Peak performance shows threads can handle up to 120 req/sec
+- ⚠️ **Very low throughput** - Only 5.7 req/sec per thread
+- ⚠️ **High variation** - Inconsistent performance between threads
+- **Comparison**: Previous test had 30.71 req/sec per thread (5x better!)
 
 ### Overall Statistics
 
 ```
-8217 requests in 30.09s, 8.02MB read
-Requests/sec:    273.05
-Transfer/sec:    272.82KB
+832 requests in 30.11s, 32.39MB read
+Requests/sec:     27.64
+Transfer/sec:      1.08MB
+
+Socket errors: connect 0, read 0, write 0, timeout 777
 ```
 
 **Total Requests:**
-- **8,217 requests** completed in 30.09 seconds
-- **8.02 MB** of data transferred
+- **832 requests** completed in 30.11 seconds
+- **32.39 MB** of data transferred
+- **Comparison**: Previous test had 8,217 requests (10x more!)
 
 **Throughput:**
-- **273.05 requests/second** - Overall application throughput
-- **272.82 KB/second** - Data transfer rate
+- **27.64 requests/second** - Overall application throughput
+- **1.08 MB/second** - Data transfer rate
+- **Comparison**: Previous test had 273 RPS (10x better!)
 
 **Calculation:**
-- 12 threads × 30.71 avg req/sec = ~368 req/sec theoretical max
-- Actual: 273 req/sec = ~74% efficiency
-- This suggests some bottlenecks (database, connection pool, etc.)
+- 8 threads × 5.70 avg req/sec = ~45.6 req/sec theoretical max
+- Actual: 27.64 req/sec = ~61% efficiency (very poor!)
+
+### Critical Issue: Socket Timeouts
+
+```
+Socket errors: connect 0, read 0, write 0, timeout 777
+```
+
+**🔴 CRITICAL: 777 Socket Timeouts!**
+
+This means:
+- **777 requests timed out** - Server didn't respond in time
+- Requests were sent but never got a response
+- Server is **overwhelmed** and can't handle the load
+
+**Why Timeouts Occur:**
+1. **Too many concurrent connections** (250 is very high)
+2. **Database connection pool exhausted** (default 5 connections)
+3. **SQLite locks** (single writer limitation)
+4. **Server overloaded** - Can't process requests fast enough
+5. **wrk_feed.lua complexity** - Login + feed requests take longer
 
 ## Performance Analysis
 
-### Is This Good or Bad?
+### Why This Test Performed Poorly
 
-**For a Feed Page (Most Expensive Query):**
-- ✅ **273 RPS** is decent for a complex feed query
-- ✅ Average latency of **523ms** is acceptable under 150 concurrent connections
-- ⚠️ **High variation** in req/sec per thread suggests uneven load distribution
-- ⚠️ **74% efficiency** indicates some resource contention
+**1. Too Many Concurrent Connections:**
+- 250 concurrent connections is **very aggressive**
+- Previous test: 150 connections → 273 RPS
+- This test: 250 connections → 27.64 RPS
+- **Diminishing returns** - More connections = worse performance
 
-### Comparison to Your Performance Analysis
+**2. wrk_feed.lua Script Complexity:**
+- Each request does: Login → Extract cookie → Feed request
+- More complex than simple GET requests
+- Cookie handling adds overhead
+- Multiple requests per "session"
 
-From `PERFORMANCE_ANALYSIS.md`, your target was:
-- **33 RPS sustained** (realistic load)
-- **100 RPS peak**
-- **Feed page: <200ms p95** (target)
+**3. Database Bottleneck:**
+- SQLite with 250 concurrent connections
+- Single writer limitation
+- Connection pool likely exhausted (default: 5 connections)
+- Database locks causing timeouts
 
-**Your Results:**
-- ✅ **273 RPS achieved** - Much higher than target! (likely due to simpler test)
-- ⚠️ **523ms average latency** - Higher than 200ms target
-  - But this is under 150 concurrent connections (very high load)
-  - Without pagination, this would be much worse!
+**4. Server Resource Limits:**
+- Puma default: 5 threads
+- 250 connections ÷ 5 threads = 50 connections queued per thread
+- Requests waiting in queue → timeouts
 
-### What the Results Tell Us
+### Comparison to Previous Test
 
-**Positive Indicators:**
-1. **Application is handling load** - 273 RPS sustained
-2. **No crashes** - All 8,217 requests completed
-3. **Reasonable latency** - 523ms average under 150 concurrent users
-4. **Stable performance** - 83% of requests within tight latency range
+| Metric | Previous (150 conn) | This Test (250 conn) | Difference |
+|--------|---------------------|---------------------|------------|
+| **RPS** | 273.05 | 27.64 | **10x worse** |
+| **Latency** | 523ms | 1,100ms | **2x worse** |
+| **Requests** | 8,217 | 832 | **10x fewer** |
+| **Timeouts** | 0 | **777** | **Critical** |
+| **Efficiency** | 74% | 61% | **13% worse** |
 
-**Areas of Concern:**
-1. **High latency variation** - Some requests much slower (up to 664ms)
-2. **Thread efficiency** - Only 74% of theoretical throughput
-3. **Inconsistent load** - High variation in req/sec per thread
+### What This Tells Us
 
-### Limitations of This Test
+**🔴 Application is Overwhelmed:**
+- 250 concurrent connections is beyond capacity
+- Server can't handle this load
+- Timeouts indicate resource exhaustion
 
-**What wrk with this script is testing:**
-- Simple GET requests to root path
-- No authentication (public feed)
-- No CSRF tokens needed
-- No POST requests
-- No pagination testing
-- No filter parameter testing
+**Root Causes:**
+1. **Connection Pool Exhaustion** - Default 5 connections insufficient
+2. **SQLite Limitations** - Single writer, can't handle 250 concurrent queries
+3. **Puma Thread Pool** - Default 5 threads insufficient
+4. **Database Locks** - SQLite struggling with concurrent writes
 
-**What it's NOT testing:**
-- Authenticated feed (logged-in users) - more expensive
-- Post creation
-- Follow/unfollow
-- User profiles
-- Pagination (cursor-based)
-- Filter options
+## Recommendations
 
-## Recommendations Based on Results
+### Immediate Fixes
 
-### 1. **Good Performance Under Load**
-Your 273 RPS is excellent! This suggests:
-- Pagination is working (only loading 20 posts)
-- Database queries are efficient
-- Server can handle concurrent load
+1. **Increase Connection Pool:**
+   ```ruby
+   # config/database.yml
+   pool: 25  # Increase from default 5
+   ```
 
-### 2. **Latency Could Be Better**
-At 523ms average, consider:
-- **Add composite index** on `(author_id, created_at)` for posts
-- **Optimize feed query** (use JOIN instead of large IN clause)
-- **Increase connection pool** if needed
-- **Add caching** for frequently accessed feeds
+2. **Increase Puma Threads:**
+   ```ruby
+   # config/puma.rb
+   threads 10, 20  # Increase from default 5
+   ```
 
-### 3. **Test Authenticated Feed**
-The wrk script tests public feed. Test authenticated feed separately:
+3. **Test with Realistic Load:**
+   ```bash
+   # Start with lower load
+   wrk -t4 -c50 -d30s -s load_test/wrk_feed.lua http://localhost:3000/
+
+   # Gradually increase
+   wrk -t8 -c100 -d30s -s load_test/wrk_feed.lua http://localhost:3000/
+   ```
+
+### Better Testing Approach
+
+**For wrk (Simple Baseline):**
 ```bash
-# Use k6 for authenticated testing (see k6_feed_test.js)
-k6 run load_test/k6_feed_test.js
+# Test public feed (no authentication complexity)
+wrk -t8 -c250 -d30s http://localhost:3000/
 ```
 
-### 4. **Test with Realistic Data**
-Your test uses public feed (no following). With 10k users and following relationships:
-- Feed queries would be more expensive
-- Latency would likely increase
-- Need to test with actual user accounts
-
-## Comparing to k6 Results
-
-**k6 vs wrk:**
-- **wrk**: Simple, fast, good for baseline throughput
-- **k6**: More realistic, tests authentication, CSRF, pagination, filters
-
-**For comprehensive testing, use k6:**
+**For Comprehensive Testing (k6):**
 ```bash
+# k6 handles authentication and sessions better
 k6 run load_test/k6_comprehensive.js
 ```
 
-This will test:
-- Authenticated feeds
-- All filter options
-- Pagination
-- Post creation
-- Follow/unfollow
-- Realistic user behavior
+### Understanding the Results
 
-## Expected Results Under Different Loads
+**Good Performance Indicators:**
+- ✅ RPS > 100
+- ✅ Latency < 500ms
+- ✅ No timeouts
+- ✅ >80% efficiency
 
-### Low Load (10 concurrent)
-- **Expected**: ~50-100 RPS, <200ms latency
-- **Your result**: N/A (tested at 150 concurrent)
+**Poor Performance Indicators (Your Results):**
+- 🔴 RPS < 50
+- 🔴 Latency > 1s
+- 🔴 **777 timeouts** (critical!)
+- 🔴 <70% efficiency
 
-### Medium Load (50 concurrent)
-- **Expected**: ~100-200 RPS, 200-400ms latency
-- **Your result**: N/A (tested at 150 concurrent)
+## What Happened
 
-### High Load (150 concurrent) - Your Test
-- **Your result**: 273 RPS, 523ms latency
-- **Assessment**: Good performance under high load
+**Your Test Scenario:**
+1. 250 concurrent connections start
+2. Each does: Login → Get cookie → Request feed
+3. Server receives 250 login requests simultaneously
+4. Database connection pool (5) exhausted
+5. Requests queue up waiting for database
+6. wrk timeout (default 2s) expires
+7. 777 requests timeout before getting response
+8. Only 832 requests complete successfully
+9. Throughput drops to 27.64 RPS
 
-### Extreme Load (300+ concurrent)
-- **Expected**: Degradation in throughput, higher latency
-- **Recommendation**: Test with k6 stress test
+**Why Previous Test Was Better:**
+- Lower concurrency (150 vs 250)
+- Simpler requests (public feed, no login)
+- Less database load
+- No cookie handling overhead
 
 ## Action Items
 
-1. ✅ **Current performance is acceptable** for 150 concurrent users
-2. ⚠️ **Optimize feed queries** to reduce latency to <200ms
-3. ⚠️ **Test authenticated feed** with k6 (more realistic)
-4. ⚠️ **Test pagination** to ensure it's working correctly
-5. ⚠️ **Monitor database** during tests to identify bottlenecks
+1. **Increase Connection Pool** (Priority 1)
+   ```ruby
+   # config/database.yml - development
+   pool: 25
+   ```
+
+2. **Increase Puma Threads** (Priority 1)
+   ```ruby
+   # config/puma.rb
+   threads 10, 20
+   ```
+
+3. **Test Gradual Load Increase:**
+   - Start: 50 connections
+   - Then: 100 connections
+   - Then: 150 connections
+   - Find breaking point
+
+4. **Use k6 for Realistic Testing:**
+   - Better session handling
+   - More realistic user behavior
+   - Better error reporting
+
+5. **Consider PostgreSQL:**
+   - SQLite has single writer limitation
+   - PostgreSQL handles concurrent connections better
 
 ## Conclusion
 
-Your wrk test shows **good baseline performance**:
-- **273 RPS** is solid throughput
-- **523ms average latency** is acceptable under high load
-- Application is **stable** (no crashes, all requests completed)
+**Your Results Show:**
+- 🔴 **Application is overwhelmed** at 250 concurrent connections
+- 🔴 **777 timeouts** indicate resource exhaustion
+- 🔴 **10x worse performance** than previous test
+- ⚠️ **Server configuration needs tuning** (connection pool, threads)
 
-However, this test is **limited** to public, unauthenticated feed. For production readiness, use k6 scripts which test:
-- Authenticated users
-- All filter options
-- Pagination
-- Realistic user behavior
+**Expected Capacity:**
+- **Current**: ~100-150 concurrent connections max
+- **With optimizations**: 200-300 concurrent connections
+- **Target**: Handle 150 concurrent users (from performance analysis)
 
-The results suggest your application can handle **moderate to high traffic** but would benefit from:
-- Query optimization (composite indexes)
-- Feed query improvements (JOIN instead of IN clause)
-- Caching for frequently accessed content
+**Next Steps:**
+1. Increase connection pool and threads
+2. Re-test with lower load first
+3. Gradually increase to find limit
+4. Use k6 for comprehensive testing
 
+See `docs/PERFORMANCE_ANALYSIS.md` for optimization recommendations.
