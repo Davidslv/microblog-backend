@@ -11,8 +11,11 @@ class PostsController < ApplicationController
       when 'mine'
         posts_relation = current_user.posts.timeline
       when 'following'
-        following_ids = current_user.following.pluck(:id)
-        posts_relation = Post.where(author_id: following_ids).timeline
+        # Optimized: Use JOIN instead of IN clause for better performance
+        user_id = Post.connection.quote(current_user.id)
+        posts_relation = Post.joins(
+          "INNER JOIN follows ON posts.author_id = follows.followed_id AND follows.follower_id = #{user_id}"
+        ).timeline.distinct
       else
         posts_relation = current_user.feed_posts.timeline
       end

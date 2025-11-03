@@ -28,8 +28,17 @@ class User < ApplicationRecord
   end
 
   def feed_posts
-    following_ids = following.pluck(:id)
-    Post.where(author_id: [id] + following_ids)
+    # Optimized: Use JOIN instead of large IN clause
+    # This is much more efficient for users with many follows (2,500+)
+    # Instead of: WHERE author_id IN (?, ?, ..., 2506 times)
+    # We use: JOIN follows table to get posts from followed users + own posts
+    user_id = Post.connection.quote(id)
+    Post.joins(
+      "LEFT JOIN follows ON posts.author_id = follows.followed_id AND follows.follower_id = #{user_id}"
+    ).where(
+      "posts.author_id = ? OR follows.followed_id IS NOT NULL",
+      id
+    ).distinct
   end
 end
 
