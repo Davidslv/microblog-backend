@@ -45,9 +45,13 @@ export default function () {
 
   const cookies = loginRes.cookies;
 
+  // Test all filter options
+  const filters = ['timeline', 'mine', 'following'];
+  const filter = filters[Math.floor(Math.random() * filters.length)];
+
   // Primary test: Feed page (the critical bottleneck)
   const startTime = Date.now();
-  const feedRes = http.get(`${BASE_URL}/`, {
+  const feedRes = http.get(`${BASE_URL}/?filter=${filter}`, {
     cookies: cookies,
     tags: { name: 'FeedPage' },
   });
@@ -62,7 +66,7 @@ export default function () {
 
   if (!feedSuccess) {
     errorRate.add(1);
-    console.log(`Feed page failed for user ${userId}: ${feedRes.status} (${duration}ms)`);
+    console.log(`Feed page failed for user ${userId} with filter ${filter}: ${feedRes.status} (${duration}ms)`);
   }
 
   // Simulate user reading time (viewing feed)
@@ -83,4 +87,3 @@ export default function () {
     sleep(1);
   }
 }
-
