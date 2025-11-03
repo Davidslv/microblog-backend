@@ -9,6 +9,19 @@ Rails.application.routes.draw do
   # get "manifest" => "rails/pwa#manifest", as: :pwa_manifest
   # get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
 
-  # Defines the root path route ("/")
-  # root "posts#index"
+  # Root path
+  root "posts#index"
+
+  # Posts
+  resources :posts, only: [:index, :show, :create]
+
+  # Users
+  resources :users, only: [:show, :edit, :update, :destroy]
+
+  # Following
+  post '/follow/:user_id', to: 'follows#create', as: 'follow'
+  delete '/follow/:user_id', to: 'follows#destroy'
+
+  # Temporary dev route - remove before production!
+  get '/dev/login/:user_id', to: 'application#dev_login', as: 'dev_login'
 end
