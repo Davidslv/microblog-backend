@@ -6,8 +6,8 @@
 
 A composite index has been added to the `posts` table to optimize feed queries that filter by `author_id` and order by `created_at DESC`.
 
-**Index Name:** `index_posts_on_author_id_and_created_at`  
-**Columns:** `author_id`, `created_at` (DESC order)  
+**Index Name:** `index_posts_on_author_id_and_created_at`
+**Columns:** `author_id`, `created_at` (DESC order)
 **Migration:** `20251103225927_add_composite_index_to_posts_on_author_id_and_created_at.rb`
 
 ### Why This Index?
@@ -62,7 +62,7 @@ end
 
 **SQL Generated:**
 ```sql
-SELECT * FROM posts 
+SELECT * FROM posts
 WHERE author_id IN (1, 2, 3, ..., 2506)
 ORDER BY created_at DESC
 LIMIT 20
@@ -80,7 +80,7 @@ LIMIT 20
 
 **SQL Generated:**
 ```sql
-SELECT * FROM posts 
+SELECT * FROM posts
 WHERE author_id = ? AND parent_id IS NULL
 ORDER BY created_at DESC
 LIMIT 20
@@ -98,7 +98,7 @@ Post.where(author_id: following_ids).order(created_at: :desc)
 
 **SQL Generated:**
 ```sql
-SELECT * FROM posts 
+SELECT * FROM posts
 WHERE author_id IN (?, ?, ...)
 ORDER BY created_at DESC
 ```
@@ -127,11 +127,11 @@ ORDER BY created_at DESC
 **Check Index Exists:**
 ```sql
 -- SQLite
-SELECT name FROM sqlite_master 
+SELECT name FROM sqlite_master
 WHERE type='index' AND name='index_posts_on_author_id_and_created_at';
 
 -- PostgreSQL
-SELECT indexname FROM pg_indexes 
+SELECT indexname FROM pg_indexes
 WHERE tablename='posts' AND indexname='index_posts_on_author_id_and_created_at';
 ```
 
@@ -139,9 +139,9 @@ WHERE tablename='posts' AND indexname='index_posts_on_author_id_and_created_at';
 ```sql
 -- SQLite (explain query plan)
 EXPLAIN QUERY PLAN
-SELECT * FROM posts 
-WHERE author_id IN (1, 2, 3) 
-ORDER BY created_at DESC 
+SELECT * FROM posts
+WHERE author_id IN (1, 2, 3)
+ORDER BY created_at DESC
 LIMIT 20;
 ```
 
