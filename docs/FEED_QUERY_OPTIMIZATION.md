@@ -146,7 +146,7 @@ The optimization maintains the same functionality:
 
 **After Optimization:**
 ```bash
-# Test with user following 2,500 users  
+# Test with user following 2,500 users
 # Expected: 50-200ms per feed query
 # Improvement: 50-70% faster
 ```
