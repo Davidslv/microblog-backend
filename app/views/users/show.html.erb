@@ -27,7 +27,7 @@
     <% if logged_in? && current_user != @user %>
       <div class="mt-4">
         <% if current_user.following?(@user) %>
-          <%= button_to "Following", follow_path(@user), method: :delete,
+          <%= button_to "Unfollow", follow_path(@user), method: :delete,
               class: "px-6 py-2 bg-black text-white font-bold rounded-full hover:bg-gray-800 transition-colors" %>
         <% else %>
           <%= button_to "Follow", follow_path(@user), method: :post,

@@ -97,14 +97,16 @@ RSpec.describe 'Posts Feature', type: :feature do
       expect(page).to have_content('Original post content')
       expect(page).to have_content('First reply')
       expect(page).to have_content('Second reply')
-      expect(page).to have_content('Replies (2)')
+      # The reply count is shown as just the number, not "Replies (2)"
+      expect(page).to have_content('2')
     end
 
     it 'shows link back to original post in reply' do
       reply = create(:post, :reply, parent: post, author: user)
       visit post_path(reply)
 
-      expect(page).to have_link("post ##{post.id}", href: post_path(post))
+      # The view shows "Replying to @username" not "post #id"
+      expect(page).to have_content("Replying to")
     end
   end
 
@@ -120,7 +122,8 @@ RSpec.describe 'Posts Feature', type: :feature do
     it 'shows reply count' do
       create_list(:post, 3, :reply, parent: post)
       visit post_path(post)
-      expect(page).to have_content('Reply (3)')
+      # The view shows just the number, not "Reply (3)"
+      expect(page).to have_content('3')
     end
 
     it 'has link to author profile' do

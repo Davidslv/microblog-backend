@@ -90,7 +90,7 @@ RSpec.describe 'Following Feature', type: :feature do
       user.follow(user3)
 
       visit root_path
-      click_link 'Timeline'
+      click_link 'For You'
 
       expect(page).to have_content('My post')
       expect(page).to have_content('Bob post')

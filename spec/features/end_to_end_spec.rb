@@ -24,16 +24,16 @@ RSpec.describe 'End-to-End User Journey', type: :feature do
       expect(page).to have_content('This is my second post.')
 
       # Step 4: View own profile
-      within('.navbar') do
-        click_link 'alice'
-      end
+      # The username link is in the nav, click it directly
+      click_link 'alice', match: :first
       expect(page).to have_content('alice')
       expect(page).to have_content('Alice description')
       # Check for post count (might be 2 or more)
       expect(page).to have_content('Posts')
 
       # Step 5: Edit profile
-      click_link 'Settings'
+      # Settings is now an icon, find it by the edit path
+      find("a[href='#{edit_user_path(user1)}']").click
       fill_in 'Description', with: 'Updated Alice description'
       click_button 'Update Settings'
       expect(page).to have_content('Settings updated successfully')
@@ -52,7 +52,11 @@ RSpec.describe 'End-to-End User Journey', type: :feature do
       expect(page).to have_content('This is my second post.')
 
       # Step 8: Reply to a post
-      click_link 'Reply', match: :first
+      # The reply count is a link to the post show page
+      # Find the post by content, then click the reply link (which shows the count)
+      post_card = page.find('article', text: 'Bob says hello!')
+      # Find the link that contains the reply count (it's a link to the post)
+      post_card.find('a', text: '0').click
       fill_in 'post_content', with: 'This is my reply to Bob!'
       click_button 'Reply'
       expect(page).to have_content('Post created successfully')
@@ -60,10 +64,8 @@ RSpec.describe 'End-to-End User Journey', type: :feature do
 
       # Step 9: Filter posts - go back to timeline first
       visit root_path
-      # Find the filter tab link
-      within('.filter-tabs') do
-        click_link 'My Posts'
-      end
+      # Filter tabs don't have a specific class, just click the link directly
+      click_link 'My Posts'
       expect(page).to have_content('Hello world!')
       expect(page).to have_content('This is my second post.')
       expect(page).not_to have_content('Bob says hello!')
@@ -75,7 +77,7 @@ RSpec.describe 'End-to-End User Journey', type: :feature do
 
       # Step 11: Verify unfollowed posts don't appear
       visit root_path
-      click_link 'Timeline'
+      click_link 'For You'
       expect(page).not_to have_content('Bob says hello!')
     end
 
@@ -156,28 +158,28 @@ RSpec.describe 'End-to-End User Journey', type: :feature do
 
     it 'allows navigation between pages' do
       visit root_path
-      expect(page).to have_link('Timeline')
+      expect(page).to have_link('For You')  # Changed from "Timeline"
       expect(page).to have_content('alice')
-      expect(page).to have_link('Settings')
+      # Settings is now an icon, check for the edit path
+      expect(page).to have_css("a[href='#{edit_user_path(user1)}']")
 
-      # Click on the username link in the navigation (first occurrence)
-      within('.navbar') do
-        click_link 'alice'
-      end
+      # Click on the username link in the navigation
+      click_link 'alice', match: :first
       expect(page).to have_current_path(user_path(user1))
 
-      click_link 'Settings'
+      # Settings is now an icon, find it by the edit path
+      find("a[href='#{edit_user_path(user1)}']").click
       expect(page).to have_current_path(edit_user_path(user1))
 
       click_link 'Cancel'
       expect(page).to have_current_path(user_path(user1))
 
       visit root_path
-      # Posts have a "Reply" link that goes to the post page
-      # Or we can navigate by finding the post content and clicking Reply
-      post_card = page.find('.post-card', text: /Test post/, match: :first)
-      # Click the Reply link which goes to the post show page
-      post_card.click_link('Reply', match: :first)
+      # Posts have a reply count link that goes to the post page
+      # Find the post by content and click the reply count link
+      post_card = page.find('article', text: /Test post/, match: :first)
+      # Click the reply count link (shows "0" for no replies) which goes to the post show page
+      post_card.find('a', text: '0').click
       expect(page).to have_current_path(post_path(Post.first))
     end
 

@@ -64,7 +64,19 @@ group :development do
 end
 
 group :test do
+  # RSpec testing framework
+  gem "rspec-rails", "~> 7.0"
+  
+  # Shoulda matchers for concise model specs
+  gem "shoulda-matchers", "~> 6.0"
+  
   # Use system testing [https://guides.rubyonrails.org/testing.html#system-testing]
   gem "capybara"
   gem "selenium-webdriver"
+  
+  # FactoryBot for test data
+  gem "factory_bot_rails"
+  
+  # Faker for generating test data
+  gem "faker"
 end
