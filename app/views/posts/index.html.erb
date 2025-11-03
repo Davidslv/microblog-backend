@@ -25,6 +25,13 @@
     <% @posts.each do |post| %>
       <%= render 'posts/post', post: post %>
     <% end %>
+
+    <% if @has_next %>
+      <div class="pagination-container">
+        <%= link_to "Load More", posts_path(filter: @filter, cursor: @next_cursor),
+            class: "btn btn-secondary load-more-btn" %>
+      </div>
+    <% end %>
   <% else %>
     <div class="empty-state">
       <p>No posts yet. <%= "Be the first to post!" if !logged_in? %></p>

@@ -18,12 +18,19 @@
 
 <% if @replies.any? %>
   <div class="replies-section">
-    <h3>Replies (<%= @replies.count %>)</h3>
+    <h3>Replies</h3>
     <div class="replies-list">
       <% @replies.each do |reply| %>
         <%= render 'posts/post', post: reply %>
       <% end %>
     </div>
+
+    <% if @replies_has_next %>
+      <div class="pagination-container">
+        <%= link_to "Load More Replies", post_path(@post, replies_cursor: @replies_next_cursor),
+            class: "btn btn-secondary load-more-btn" %>
+      </div>
+    <% end %>
   </div>
 <% else %>
   <div class="empty-state">

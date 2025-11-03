@@ -2,30 +2,41 @@ class PostsController < ApplicationController
   before_action :require_login_for_create, only: [:create]
 
   def index
-    if current_user
-      @posts = current_user.feed_posts.timeline
-      @filter = params[:filter] || 'timeline'
+    @post = Post.new
+    @filter = params[:filter] || 'timeline'
+    per_page = 20
 
+    if current_user
       case @filter
       when 'mine'
-        @posts = current_user.posts.timeline
+        posts_relation = current_user.posts.timeline
       when 'following'
         following_ids = current_user.following.pluck(:id)
-        @posts = Post.where(author_id: following_ids).timeline
+        posts_relation = Post.where(author_id: following_ids).timeline
       else
-        @posts = current_user.feed_posts.timeline
+        posts_relation = current_user.feed_posts.timeline
       end
     else
-      @posts = Post.top_level.timeline.limit(20)
+      posts_relation = Post.top_level.timeline
       @filter = 'all'
     end
 
-    @post = Post.new
+    # Use cursor-based pagination (efficient SQL, no OFFSET)
+    @posts, @next_cursor, @has_next = cursor_paginate(posts_relation, per_page: per_page)
   end
 
   def show
     @post = Post.find(params[:id])
-    @replies = @post.replies.timeline
+    # Paginate replies using cursor-based pagination
+    # Replies are ordered oldest to newest (ASC) for chronological conversation flow
+    # Use a separate cursor param for replies
+    replies_cursor = params[:replies_cursor] || params[:cursor]
+    @replies, @replies_next_cursor, @replies_has_next = cursor_paginate(
+      @post.replies.order(created_at: :asc),
+      per_page: 20,
+      cursor: replies_cursor,
+      order: :asc
+    )
     @reply = Post.new(parent_id: @post.id)
   end
 

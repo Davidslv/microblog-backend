@@ -4,7 +4,11 @@ class UsersController < ApplicationController
   before_action :require_owner, only: [:edit, :update, :destroy]
 
   def show
-    @posts = @user.posts.top_level.timeline
+    # Paginate user posts using cursor-based pagination
+    @posts, @next_cursor, @has_next = cursor_paginate(
+      @user.posts.top_level.timeline,
+      per_page: 20
+    )
     @followers_count = @user.followers.count
     @following_count = @user.following.count
   end
