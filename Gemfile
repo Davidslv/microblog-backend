@@ -38,6 +38,9 @@ gem "thruster", require: false
 # Use Active Storage variants [https://guides.rubyonrails.org/active_storage_overview.html#transforming-images]
 gem "image_processing", "~> 1.2"
 
+# Tailwind CSS for modern, utility-first styling
+gem "tailwindcss-rails"
+
 # Note: We use custom cursor-based pagination (no gem needed)
 # See: app/controllers/application_controller.rb#cursor_paginate
 
