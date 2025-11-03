@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_03_175111) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_03_225927) do
   create_table "follows", id: false, force: :cascade do |t|
     t.datetime "created_at", null: false
     t.bigint "followed_id", null: false
@@ -26,6 +26,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_03_175111) do
     t.datetime "created_at", null: false
     t.integer "parent_id"
     t.datetime "updated_at", null: false
+    t.index ["author_id", "created_at"], name: "index_posts_on_author_id_and_created_at", order: { created_at: :desc }
     t.index ["author_id"], name: "index_posts_on_author_id"
     t.index ["created_at"], name: "index_posts_on_created_at"
     t.index ["parent_id"], name: "index_posts_on_parent_id"
