@@ -18,37 +18,53 @@
     <link rel="icon" href="/icon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="/icon.png">
 
-    <%# Includes all stylesheet files in app/assets/stylesheets %>
-    <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
+    <%= stylesheet_link_tag "tailwind", "data-turbo-track": "reload" %>
     <%= javascript_importmap_tags %>
   </head>
 
-  <body>
-    <nav class="navbar">
-      <div class="nav-container">
-        <%= link_to "Microblog", root_path, class: "nav-brand" %>
-        <div class="nav-links">
-          <% if logged_in? %>
-            <%= link_to "Timeline", posts_path, class: "nav-link" %>
-            <%= link_to current_user.username, user_path(current_user), class: "nav-link" %>
-            <%= link_to "Settings", edit_user_path(current_user), class: "nav-link" %>
-            <span class="nav-link">(Dev Mode)</span>
-          <% else %>
-            <span class="nav-link">Not logged in (<%= link_to "Dev Login", "/dev/login/1", class: "nav-link" %>)</span>
+  <body class="bg-gray-50 min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50">
+      <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center h-16">
+          <%= link_to root_path, class: "text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent hover:from-blue-700 hover:to-indigo-700 transition-colors" do %>
+            Microblog
           <% end %>
+          <div class="flex items-center gap-4">
+            <% if logged_in? %>
+              <%= link_to "Timeline", posts_path, class: "text-gray-600 hover:text-blue-600 font-medium transition-colors" %>
+              <%= link_to current_user.username, user_path(current_user), class: "text-gray-600 hover:text-blue-600 font-medium transition-colors" %>
+              <%= link_to "Settings", edit_user_path(current_user), class: "text-gray-600 hover:text-blue-600 font-medium transition-colors" %>
+              <span class="text-xs text-gray-400">(Dev Mode)</span>
+            <% else %>
+              <span class="text-sm text-gray-600">
+                Not logged in (<%= link_to "Dev Login", "/dev/login/1", class: "text-blue-600 hover:text-blue-700 font-medium" %>)
+              </span>
+            <% end %>
+          </div>
         </div>
       </div>
     </nav>
 
+    <!-- Flash Messages -->
     <% if notice %>
-      <div class="flash flash-notice"><%= notice %></div>
+      <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+        <div class="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg shadow-sm">
+          <%= notice %>
+        </div>
+      </div>
     <% end %>
 
     <% if alert %>
-      <div class="flash flash-alert"><%= alert %></div>
+      <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
+        <div class="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg shadow-sm">
+          <%= alert %>
+        </div>
+      </div>
     <% end %>
 
-    <main class="container">
+    <!-- Main Content -->
+    <main class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <%= yield %>
     </main>
   </body>
