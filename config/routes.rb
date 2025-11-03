@@ -24,4 +24,30 @@ Rails.application.routes.draw do
 
   # Temporary dev route - remove before production!
   get '/dev/login/:user_id', to: 'application#dev_login', as: 'dev_login'
+
+  # Monitoring endpoints (development only)
+  if Rails.env.development?
+    get '/puma/stats' => proc { |env|
+      require 'json'
+      stats = Puma.stats
+      [200, { 'Content-Type' => 'application/json' }, [stats.to_json]]
+    }
+
+    get '/health' => proc { |env|
+      require 'json'
+      health = {
+        status: 'ok',
+        timestamp: Time.current.iso8601,
+        database: {
+          connected: ActiveRecord::Base.connection.active?,
+          size: begin
+            File.size(Rails.root.join("storage/#{Rails.env}.sqlite3"))
+          rescue
+            nil
+          end
+        }
+      }
+      [200, { 'Content-Type' => 'application/json' }, [health.to_json]]
+    }
+  end
 end
