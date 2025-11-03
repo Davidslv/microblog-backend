@@ -14,7 +14,7 @@ RSpec.describe 'Following Feature', type: :feature do
 
       expect {
         click_button 'Follow'
-        sleep 0.5 # Wait for redirect
+        # sleep 0.3 # Wait for redirect
       }.to change(Follow, :count).by(1)
 
       expect(page).to have_content("You are now following #{other_user.username}")
@@ -26,7 +26,7 @@ RSpec.describe 'Following Feature', type: :feature do
       initial_count = other_user.followers.count
 
       click_button 'Follow'
-      sleep 0.5
+      # sleep 0.3
 
       visit user_path(other_user)
       expect(page).to have_content((initial_count + 1).to_s)
@@ -36,7 +36,7 @@ RSpec.describe 'Following Feature', type: :feature do
       create(:post, author: other_user, content: 'Post from followed user')
       visit user_path(other_user)
       click_button 'Follow'
-      sleep 0.5
+      # sleep 0.3
 
       visit root_path
       expect(page).to have_content('Post from followed user')
@@ -53,7 +53,7 @@ RSpec.describe 'Following Feature', type: :feature do
 
       expect {
         click_button 'Unfollow'
-        sleep 0.5
+        # sleep 0.3
       }.to change(Follow, :count).by(-1)
 
       expect(page).to have_content("You have unfollowed #{other_user.username}")
@@ -69,7 +69,7 @@ RSpec.describe 'Following Feature', type: :feature do
 
       visit user_path(other_user)
       click_button 'Unfollow'
-      sleep 0.5
+      # sleep 0.3
 
       visit root_path
       expect(page).not_to have_content('Will be removed')

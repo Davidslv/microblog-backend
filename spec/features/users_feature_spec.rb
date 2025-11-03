@@ -130,7 +130,7 @@ RSpec.describe 'Users Feature', type: :feature do
             click_button 'Delete Account'
           end
         end
-        sleep 0.5 # Wait for redirect
+        # sleep 0.3 # Wait for redirect
       }.to change(User, :count).by(-1)
     end
 
@@ -162,7 +162,7 @@ RSpec.describe 'Users Feature', type: :feature do
             click_button 'Delete Account'
           end
         end
-        sleep 0.5
+        # sleep 0.1
       }.to change(Follow, :count).by(-1)
     end
 
