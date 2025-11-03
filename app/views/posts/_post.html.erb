@@ -1,29 +1,39 @@
-<div class="post-card" id="post-<%= post.id %>">
-  <div class="post-header">
-    <strong class="post-author">
-      <% if post.author_id %>
-        <%= link_to post.author_name, user_path(post.author_id), class: "author-link" %>
-      <% else %>
-        <span class="author-link"><%= post.author_name %></span>
-      <% end %>
-    </strong>
-    <span class="post-time"><%= time_ago_in_words(post.created_at) %> ago</span>
+<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow" id="post-<%= post.id %>">
+  <div class="flex justify-between items-start mb-4">
+    <div class="flex items-center gap-3">
+      <strong class="text-gray-900 font-semibold">
+        <% if post.author_id %>
+          <%= link_to post.author_name, user_path(post.author_id),
+              class: "text-blue-600 hover:text-blue-700 hover:underline transition-colors" %>
+        <% else %>
+          <span class="text-gray-600"><%= post.author_name %></span>
+        <% end %>
+      </strong>
+    </div>
+    <span class="text-sm text-gray-500 whitespace-nowrap">
+      <%= time_ago_in_words(post.created_at) %> ago
+    </span>
   </div>
 
-  <div class="post-content">
-    <%= simple_format(post.content) %>
+  <div class="text-gray-800 mb-4 whitespace-pre-wrap break-words leading-relaxed">
+    <%= simple_format(post.content, {}, wrapper_tag: "div") %>
   </div>
 
-  <div class="post-footer">
+  <div class="flex items-center gap-4 pt-4 border-t border-gray-100">
     <% if post.parent %>
-      <span class="post-meta">Reply to <%= link_to "post ##{post.parent.id}", post_path(post.parent) %></span>
+      <span class="text-sm text-gray-500">
+        Reply to <%= link_to "post ##{post.parent.id}", post_path(post.parent),
+            class: "text-blue-600 hover:text-blue-700 hover:underline" %>
+      </span>
     <% else %>
       <% if logged_in? %>
-        <%= link_to "Reply (#{post.replies.count})", post_path(post), class: "btn btn-small" %>
+        <%= link_to "Reply (#{post.replies.count})", post_path(post),
+            class: "text-sm px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium" %>
       <% else %>
-        <span class="post-meta"><%= pluralize(post.replies.count, 'reply') %></span>
+        <span class="text-sm text-gray-500">
+          <%= pluralize(post.replies.count, 'reply') %>
+        </span>
       <% end %>
     <% end %>
   </div>
 </div>
-

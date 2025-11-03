@@ -1,42 +1,53 @@
-<div class="post-detail">
+<!-- Post Detail -->
+<div class="mb-6">
   <%= render 'posts/post', post: @post, show_replies: false %>
 </div>
 
 <% if logged_in? %>
-  <div class="reply-form-container" data-controller="character-counter">
-    <h3>Reply</h3>
-    <%= form_with model: @reply, url: posts_path, local: true, class: "post-form" do |f| %>
+  <!-- Reply Form -->
+  <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6" data-controller="character-counter">
+    <h3 class="text-lg font-semibold text-gray-900 mb-4">Reply</h3>
+    <%= form_with model: @reply, url: posts_path, local: true, class: "space-y-4" do |f| %>
       <%= f.hidden_field :parent_id %>
-      <%= f.text_area :content, placeholder: "Write a reply... (max 200 characters)", maxlength: 200, rows: 3, class: "post-content", data: { character_counter_target: "input" } %>
-      <div class="post-form-footer">
-        <span class="char-counter"><span data-character-counter-target="counter">0</span>/200</span>
-        <%= f.submit "Reply", class: "btn btn-primary" %>
+      <%= f.text_area :content,
+          placeholder: "Write a reply... (max 200 characters)",
+          maxlength: 200,
+          rows: 3,
+          class: "w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-all",
+          data: { character_counter_target: "input" } %>
+      <div class="flex justify-between items-center">
+        <span class="text-sm text-gray-500">
+          <span data-character-counter-target="counter" class="font-medium">0</span>/200
+        </span>
+        <%= f.submit "Reply",
+            class: "px-6 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all shadow-sm hover:shadow-md transform hover:-translate-y-0.5" %>
       </div>
     <% end %>
   </div>
 <% end %>
 
+<!-- Replies Section -->
 <% if @replies.any? %>
-  <div class="replies-section">
-    <h3>Replies</h3>
-    <div class="replies-list">
+  <div class="mt-8">
+    <h3 class="text-xl font-semibold text-gray-900 mb-4">Replies</h3>
+    <div class="space-y-4">
       <% @replies.each do |reply| %>
         <%= render 'posts/post', post: reply %>
       <% end %>
     </div>
 
     <% if @replies_has_next %>
-      <div class="pagination-container">
+      <div class="flex justify-center pt-6">
         <%= link_to "Load More Replies", post_path(@post, replies_cursor: @replies_next_cursor),
-            class: "btn btn-secondary load-more-btn" %>
+            class: "px-6 py-2 bg-white border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all shadow-sm hover:shadow-md" %>
       </div>
     <% end %>
   </div>
 <% else %>
-  <div class="empty-state">
-    <p>No replies yet.</p>
+  <div class="text-center py-12 bg-white rounded-xl shadow-sm border border-gray-200 mt-8">
+    <p class="text-gray-500 text-lg">No replies yet.</p>
   </div>
 <% end %>
 
-<%= link_to "← Back to Timeline", posts_path, class: "back-link" %>
-
+<%= link_to "← Back to Timeline", posts_path,
+    class: "inline-block mt-8 text-blue-600 hover:text-blue-700 font-medium hover:underline transition-colors" %>

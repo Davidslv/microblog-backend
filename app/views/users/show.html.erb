@@ -1,55 +1,60 @@
-<div class="user-profile">
-  <h1><%= @user.username %></h1>
+<!-- User Profile Card -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-6">
+  <h1 class="text-3xl font-bold text-gray-900 mb-4"><%= @user.username %></h1>
 
   <% if @user.description.present? %>
-    <p class="user-description"><%= @user.description %></p>
+    <p class="text-gray-600 text-lg mb-6 leading-relaxed"><%= @user.description %></p>
   <% end %>
 
-  <div class="user-stats">
-    <div class="stat">
-      <strong><%= @posts.count %></strong>
-      <span>Posts</span>
+  <!-- Stats -->
+  <div class="flex gap-8 mb-6 pb-6 border-b border-gray-200">
+    <div class="flex flex-col">
+      <strong class="text-2xl font-bold text-gray-900"><%= @posts.count %></strong>
+      <span class="text-sm text-gray-500 mt-1">Posts</span>
     </div>
-    <div class="stat">
-      <strong><%= @followers_count %></strong>
-      <span>Followers</span>
+    <div class="flex flex-col">
+      <strong class="text-2xl font-bold text-gray-900"><%= @followers_count %></strong>
+      <span class="text-sm text-gray-500 mt-1">Followers</span>
     </div>
-    <div class="stat">
-      <strong><%= @following_count %></strong>
-      <span>Following</span>
+    <div class="flex flex-col">
+      <strong class="text-2xl font-bold text-gray-900"><%= @following_count %></strong>
+      <span class="text-sm text-gray-500 mt-1">Following</span>
     </div>
   </div>
 
+  <!-- Follow Button -->
   <% if logged_in? && current_user != @user %>
-    <div class="follow-section">
+    <div class="mt-4">
       <% if current_user.following?(@user) %>
-        <%= button_to "Unfollow", follow_path(@user), method: :delete, class: "btn btn-secondary" %>
+        <%= button_to "Unfollow", follow_path(@user), method: :delete,
+            class: "px-6 py-2 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-all shadow-sm hover:shadow-md" %>
       <% else %>
-        <%= button_to "Follow", follow_path(@user), method: :post, class: "btn btn-primary" %>
+        <%= button_to "Follow", follow_path(@user), method: :post,
+            class: "px-6 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all shadow-sm hover:shadow-md transform hover:-translate-y-0.5" %>
       <% end %>
     </div>
   <% end %>
 </div>
 
-<div class="user-posts">
-  <h2>Posts</h2>
+<!-- User Posts -->
+<div>
+  <h2 class="text-2xl font-bold text-gray-900 mb-6">Posts</h2>
   <% if @posts.any? %>
-    <div class="posts-list">
+    <div class="space-y-4">
       <% @posts.each do |post| %>
         <%= render 'posts/post', post: post %>
       <% end %>
     </div>
 
     <% if @has_next %>
-      <div class="pagination-container">
+      <div class="flex justify-center pt-6">
         <%= link_to "Load More", user_path(@user, cursor: @next_cursor),
-            class: "btn btn-secondary load-more-btn" %>
+            class: "px-6 py-2 bg-white border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all shadow-sm hover:shadow-md" %>
       </div>
     <% end %>
   <% else %>
-    <div class="empty-state">
-      <p>No posts yet.</p>
+    <div class="text-center py-12 bg-white rounded-xl shadow-sm border border-gray-200">
+      <p class="text-gray-500 text-lg">No posts yet.</p>
     </div>
   <% end %>
 </div>
-
