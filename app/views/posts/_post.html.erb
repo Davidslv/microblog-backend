@@ -1,0 +1,29 @@
+<div class="post-card" id="post-<%= post.id %>">
+  <div class="post-header">
+    <strong class="post-author">
+      <% if post.author_id %>
+        <%= link_to post.author_name, user_path(post.author_id), class: "author-link" %>
+      <% else %>
+        <span class="author-link"><%= post.author_name %></span>
+      <% end %>
+    </strong>
+    <span class="post-time"><%= time_ago_in_words(post.created_at) %> ago</span>
+  </div>
+
+  <div class="post-content">
+    <%= simple_format(post.content) %>
+  </div>
+
+  <div class="post-footer">
+    <% if post.parent %>
+      <span class="post-meta">Reply to <%= link_to "post ##{post.parent.id}", post_path(post.parent) %></span>
+    <% else %>
+      <% if logged_in? %>
+        <%= link_to "Reply (#{post.replies.count})", post_path(post), class: "btn btn-small" %>
+      <% else %>
+        <span class="post-meta"><%= pluralize(post.replies.count, 'reply') %></span>
+      <% end %>
+    <% end %>
+  </div>
+</div>
+

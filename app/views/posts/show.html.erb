@@ -1,0 +1,35 @@
+<div class="post-detail">
+  <%= render 'posts/post', post: @post, show_replies: false %>
+</div>
+
+<% if logged_in? %>
+  <div class="reply-form-container" data-controller="character-counter">
+    <h3>Reply</h3>
+    <%= form_with model: @reply, url: posts_path, local: true, class: "post-form" do |f| %>
+      <%= f.hidden_field :parent_id %>
+      <%= f.text_area :content, placeholder: "Write a reply... (max 200 characters)", maxlength: 200, rows: 3, class: "post-content", data: { character_counter_target: "input" } %>
+      <div class="post-form-footer">
+        <span class="char-counter"><span data-character-counter-target="counter">0</span>/200</span>
+        <%= f.submit "Reply", class: "btn btn-primary" %>
+      </div>
+    <% end %>
+  </div>
+<% end %>
+
+<% if @replies.any? %>
+  <div class="replies-section">
+    <h3>Replies (<%= @replies.count %>)</h3>
+    <div class="replies-list">
+      <% @replies.each do |reply| %>
+        <%= render 'posts/post', post: reply %>
+      <% end %>
+    </div>
+  </div>
+<% else %>
+  <div class="empty-state">
+    <p>No replies yet.</p>
+  </div>
+<% end %>
+
+<%= link_to "← Back to Timeline", posts_path, class: "back-link" %>
+

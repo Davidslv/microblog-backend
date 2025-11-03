@@ -1,0 +1,48 @@
+<div class="user-profile">
+  <h1><%= @user.username %></h1>
+
+  <% if @user.description.present? %>
+    <p class="user-description"><%= @user.description %></p>
+  <% end %>
+
+  <div class="user-stats">
+    <div class="stat">
+      <strong><%= @posts.count %></strong>
+      <span>Posts</span>
+    </div>
+    <div class="stat">
+      <strong><%= @followers_count %></strong>
+      <span>Followers</span>
+    </div>
+    <div class="stat">
+      <strong><%= @following_count %></strong>
+      <span>Following</span>
+    </div>
+  </div>
+
+  <% if logged_in? && current_user != @user %>
+    <div class="follow-section">
+      <% if current_user.following?(@user) %>
+        <%= button_to "Unfollow", follow_path(@user), method: :delete, class: "btn btn-secondary" %>
+      <% else %>
+        <%= button_to "Follow", follow_path(@user), method: :post, class: "btn btn-primary" %>
+      <% end %>
+    </div>
+  <% end %>
+</div>
+
+<div class="user-posts">
+  <h2>Posts</h2>
+  <% if @posts.any? %>
+    <div class="posts-list">
+      <% @posts.each do |post| %>
+        <%= render 'posts/post', post: post %>
+      <% end %>
+    </div>
+  <% else %>
+    <div class="empty-state">
+      <p>No posts yet.</p>
+    </div>
+  <% end %>
+</div>
+
