@@ -47,4 +47,3 @@ Rails.application.config.after_initialize do
     Rails.cache.extend(SolidCacheReadReplicaFix)
   end
 end
-

@@ -24,4 +24,3 @@ if defined?(MissionControl::Jobs)
   # Mission Control automatically detects Solid Queue and uses the primary connection
   # No need to explicitly add the application - it's auto-detected
 end
-
