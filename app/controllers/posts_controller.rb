@@ -40,7 +40,7 @@ class PostsController < ApplicationController
       else
         posts_relation = Post.top_level.timeline
         @posts, @next_cursor, @has_next = cursor_paginate(posts_relation, per_page: per_page)
-        Rails.cache.write(cache_key, [@posts, @next_cursor, @has_next], expires_in: 1.minute)
+        Rails.cache.write(cache_key, [ @posts, @next_cursor, @has_next ], expires_in: 1.minute)
       end
 
       return # Early return for cached public posts
@@ -52,7 +52,7 @@ class PostsController < ApplicationController
     # Cache the paginated result for feed queries (if not already cached)
     if @filter == "timeline" && current_user
       cache_key = "user_feed:#{current_user.id}:#{params[:cursor]}"
-      Rails.cache.write(cache_key, [@posts, @next_cursor, @has_next], expires_in: 5.minutes)
+      Rails.cache.write(cache_key, [ @posts, @next_cursor, @has_next ], expires_in: 5.minutes)
     end
   end
 

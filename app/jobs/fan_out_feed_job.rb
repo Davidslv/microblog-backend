@@ -57,4 +57,3 @@ class FanOutFeedJob < ApplicationJob
     raise # Re-raise to trigger retry
   end
 end
-

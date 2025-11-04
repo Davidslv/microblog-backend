@@ -41,4 +41,3 @@ class Post < ApplicationRecord
     FanOutFeedJob.perform_later(id)
   end
 end
-

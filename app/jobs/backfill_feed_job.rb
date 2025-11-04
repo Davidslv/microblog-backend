@@ -71,4 +71,3 @@ class BackfillFeedJob < ApplicationJob
     raise # Re-raise to trigger retry
   end
 end
-

@@ -24,7 +24,7 @@ class User < ApplicationRecord
       # Fan-out on write: Backfill recent posts from the followed user
       # This ensures the new follower sees posts from the person they just followed
       BackfillFeedJob.perform_later(id, other_user.id)
-      
+
       # Note: Cache invalidation removed - cache will expire via TTL
       # Feed entries are the source of truth, cache is just for performance
       true

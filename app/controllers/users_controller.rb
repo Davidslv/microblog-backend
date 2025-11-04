@@ -21,7 +21,7 @@ class UsersController < ApplicationController
         @user.posts.top_level.timeline,
         per_page: 20
       )
-      Rails.cache.write(cache_key, [@posts, @next_cursor, @has_next], expires_in: 5.minutes)
+      Rails.cache.write(cache_key, [ @posts, @next_cursor, @has_next ], expires_in: 5.minutes)
     end
 
     @followers_count = @user.followers_count

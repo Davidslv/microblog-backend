@@ -72,4 +72,3 @@ class FeedEntry < ApplicationRecord
     where(post_id: post_id).delete_all
   end
 end
-
