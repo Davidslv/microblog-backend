@@ -9,21 +9,7 @@
 #     priority: 2
 #     schedule: at 5am every day
 
-development:
-  backfill_counter_caches:
-    class: BackfillCounterCachesJob
-    schedule: every 6 seconds
-    description: "Periodically backfill counter caches (followers_count, following_count, posts_count)"
-
-test:
-  # No recurring jobs in test environment
-
 production:
   clear_solid_queue_finished_jobs:
     command: "SolidQueue::Job.clear_finished_in_batches(sleep_between_batches: 0.3)"
     schedule: every hour at minute 12
-
-  backfill_counter_caches:
-    class: BackfillCounterCachesJob
-    schedule: every 6 hours
-    description: "Periodically backfill counter caches (followers_count, following_count, posts_count)"

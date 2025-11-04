@@ -7,8 +7,6 @@ default: &default
 
 development:
   <<: *default
-  store_options:
-    max_age: <%= 15.seconds.to_i %>
 
 test:
   <<: *default

@@ -211,6 +211,11 @@ First, set up the database:
 # Set Rails master key (required for production mode)
 export RAILS_MASTER_KEY=$(cat config/master.key)
 
+# Set secret key base (required for production mode)
+# Generate a new one: bin/rails secret
+# Or use a dummy for local testing: export SECRET_KEY_BASE=dummy_secret_key_base_for_local_testing
+export SECRET_KEY_BASE=$(bin/rails secret)
+
 # Run migrations
 docker compose --profile tools run migrate
 ```

@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # PostgreSQL database (shared across all app instances)
   db:
@@ -78,10 +76,15 @@ services:
       dockerfile: Dockerfile
     command: >
       sh -c "
+        # Create Solid database users first (as postgres superuser)
+        bin/rails runner script/docker_setup_solid_databases.rb &&
+        # Create main database and run migrations
         bin/rails db:create db:migrate &&
-        bin/rails solid_cache:install &&
-        bin/rails solid_queue:install &&
-        bin/rails solid_cable:install
+        # Install Solid adapters (will create their databases using the users we just created)
+        # Use yes to auto-confirm file overwrites
+        yes | bin/rails solid_cache:install &&
+        yes | bin/rails solid_queue:install &&
+        yes | bin/rails solid_cable:install
       "
     environment:
       RAILS_ENV: production
