@@ -41,18 +41,41 @@ pgbouncer --version
 
 ## Configuration
 
-### 1. Create PgBouncer Configuration
+### 1. Update PgBouncer Configuration (Recommended)
 
+**Use the automated script:**
+```bash
+./script/update_pgbouncer_config.sh
+```
+
+This script will:
+- Backup your current config
+- Stop PgBouncer if running
+- Copy our optimized config
+- Update paths for your OS
+
+**Or manually:**
 The configuration file is at `config/pgbouncer.ini`. Copy it to the system location:
 
 **macOS:**
 ```bash
-sudo mkdir -p /usr/local/etc
-sudo cp config/pgbouncer.ini /usr/local/etc/pgbouncer.ini
+# Stop PgBouncer first
+pkill pgbouncer
+
+# Copy config
+sudo cp config/pgbouncer.ini /opt/homebrew/etc/pgbouncer.ini
+
+# Update paths in config
+sudo sed -i '' 's|logfile = /tmp/pgbouncer.log|logfile = /opt/homebrew/var/log/pgbouncer.log|' /opt/homebrew/etc/pgbouncer.ini
+sudo sed -i '' 's|pidfile = /tmp/pgbouncer.pid|pidfile = /opt/homebrew/var/run/pgbouncer.pid|' /opt/homebrew/etc/pgbouncer.ini
 ```
 
 **Linux:**
 ```bash
+# Stop PgBouncer first
+sudo systemctl stop pgbouncer
+
+# Copy config
 sudo cp config/pgbouncer.ini /etc/pgbouncer/pgbouncer.ini
 ```
 
@@ -305,9 +328,16 @@ tail -f /tmp/pgbouncer.log
 - Check `pgbouncer.ini` database configuration
 - Verify PostgreSQL databases exist
 
-**Error: "Password authentication failed"**
-- Check `auth_type` in config (use `trust` for dev)
-- Verify user permissions
+**Error: "Password authentication failed" or "no password supplied"**
+- **Most common issue**: Using default Homebrew config with `auth_type = md5`
+- **Fix**: Run `./script/update_pgbouncer_config.sh` to use our `trust` config
+- Or manually set `auth_type = trust` in PgBouncer config
+- Remove or comment out `auth_file` line when using `trust`
+- Restart PgBouncer after config changes
+
+**Error: "no such user"**
+- PgBouncer is using `auth_type = md5` and user not in auth_file
+- **Fix**: Change to `auth_type = trust` in config and restart
 
 **Error: "Too many connections"**
 - Increase `default_pool_size` in pgbouncer.ini
