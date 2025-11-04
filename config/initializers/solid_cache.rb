@@ -41,6 +41,13 @@ Rails.application.config.after_initialize do
           super
         end
       end
+
+      # fetch reads and potentially writes, so it must use writing connection
+      def fetch(name, options = nil, &block)
+        ActiveRecord::Base.connected_to(role: :writing) do
+          super
+        end
+      end
     end
 
     # Extend the cache store to always use writing connection
