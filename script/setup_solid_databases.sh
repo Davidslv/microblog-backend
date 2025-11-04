@@ -112,7 +112,7 @@ create_user_and_db() {
       echo "  ✓ Created user '$username' with CREATEDB privilege (no password)"
     fi
   fi
-  
+
   # Ensure CREATEDB privilege (for Rails db:create/db:setup)
   psql -U "$PGUSER" -d postgres -c "ALTER USER $username WITH CREATEDB;" > /dev/null 2>&1
 

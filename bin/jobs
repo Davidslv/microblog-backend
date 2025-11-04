@@ -1,9 +1,5 @@
 #!/usr/bin/env ruby
 
-# Set environment variable for Solid Queue worker
-# This enables eager loading and ensures proper connection setup
-ENV["SOLID_QUEUE_WORKER"] = "true"
-
 require_relative "../config/environment"
 require "solid_queue/cli"
 
