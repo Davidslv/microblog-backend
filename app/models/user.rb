@@ -1,9 +1,10 @@
 class User < ApplicationRecord
   has_secure_password
 
-  has_many :posts, foreign_key: "author_id", dependent: :nullify, counter_cache: true
-  has_many :active_follows, class_name: "Follow", foreign_key: "follower_id", dependent: :delete_all
-  has_many :passive_follows, class_name: "Follow", foreign_key: "followed_id", dependent: :delete_all
+  has_many :posts, foreign_key: "author_id", dependent: :nullify, counter_cache: :posts_count
+  # Follow associations don't use counter_cache (we manage counters manually via Follow callbacks)
+  has_many :active_follows, class_name: "Follow", foreign_key: "follower_id", dependent: :delete_all, counter_cache: false
+  has_many :passive_follows, class_name: "Follow", foreign_key: "followed_id", dependent: :delete_all, counter_cache: false
   has_many :following, through: :active_follows, source: :followed
   has_many :followers, through: :passive_follows, source: :follower
 
@@ -21,9 +22,17 @@ class User < ApplicationRecord
   end
 
   def unfollow(other_user)
-    # Follow model callbacks will update counter caches automatically
-    # Use destroy_all to trigger callbacks (delete_all doesn't trigger callbacks)
-    active_follows.where(followed_id: other_user.id).destroy_all.any?
+    # Use delete_all with WHERE clause to avoid composite key issues
+    # Manually update counter caches since delete_all doesn't trigger callbacks
+    deleted_count = Follow.where(follower_id: id, followed_id: other_user.id).delete_all
+    if deleted_count > 0
+      # Update counter caches
+      decrement!(:following_count)
+      other_user.decrement!(:followers_count)
+      true
+    else
+      false
+    end
   end
 
   def following?(other_user)

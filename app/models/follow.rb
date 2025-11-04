@@ -21,7 +21,23 @@ class Follow < ApplicationRecord
   end
 
   def decrement_counters
-    User.decrement_counter(:following_count, follower_id)
-    User.decrement_counter(:followers_count, followed_id)
+    # Only decrement if users still exist (they might be destroyed)
+    # When user is deleted, foreign key cascade deletes Follow records,
+    # but callbacks might still run, so we need to check if users exist
+    if User.exists?(follower_id)
+      begin
+        User.decrement_counter(:following_count, follower_id)
+      rescue ActiveRecord::RecordNotFound, ActiveRecord::StatementInvalid
+        # User already deleted or other error, skip
+      end
+    end
+    
+    if User.exists?(followed_id)
+      begin
+        User.decrement_counter(:followers_count, followed_id)
+      rescue ActiveRecord::RecordNotFound, ActiveRecord::StatementInvalid
+        # User already deleted or other error, skip
+      end
+    end
   end
 end
