@@ -1,0 +1,109 @@
+version: '3.8'
+
+services:
+  # PostgreSQL database (shared across all app instances)
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${DATABASE_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-}
+      POSTGRES_DB: microblog_development
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USERNAME:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Application instances (scale with: docker compose up --scale web=3)
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: bin/rails server -b 0.0.0.0 -p 3000
+    environment:
+      RAILS_ENV: production
+      DATABASE_URL: postgresql://${DATABASE_USERNAME:-postgres}:${DATABASE_PASSWORD:-}@db:5432/microblog_development
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USERNAME: ${DATABASE_USERNAME:-postgres}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-}
+      # Cache and queue use same PostgreSQL instance for horizontal scaling
+      CACHE_DB_HOST: db
+      CACHE_DB_PORT: 5432
+      QUEUE_DB_HOST: db
+      QUEUE_DB_PORT: 5432
+      # Enable Solid Queue workers in Puma (recommended for horizontal scaling)
+      SOLID_QUEUE_IN_PUMA: "true"
+      # Rails master key (required for production mode)
+      RAILS_MASTER_KEY: ${RAILS_MASTER_KEY:-}
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE:-}
+    ports:
+      - "3000-3009:3000"  # Range for multiple instances
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - .:/rails
+    healthcheck:
+      # curl is available in the Dockerfile base image
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/up || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+    labels:
+      # Traefik configuration for auto-discovery
+      - "traefik.enable=true"
+      - "traefik.http.routers.web.rule=Host(`localhost`)"
+      - "traefik.http.routers.web.entrypoints=web"
+      - "traefik.http.services.web.loadbalancer.server.port=3000"
+
+  # Database migrations (run once)
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: bin/rails db:migrate
+    environment:
+      RAILS_ENV: production
+      DATABASE_URL: postgresql://${DATABASE_USERNAME:-postgres}:${DATABASE_PASSWORD:-}@db:5432/microblog_development
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USERNAME: ${DATABASE_USERNAME:-postgres}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-}
+      RAILS_MASTER_KEY: ${RAILS_MASTER_KEY:-}
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE:-}
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - .:/rails
+    profiles:
+      - tools
+
+  # Load balancer (Traefik with auto-discovery)
+  traefik:
+    image: traefik:v2.10
+    command:
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--api.dashboard=true"
+      - "--api.insecure=true"
+    ports:
+      - "80:80"
+      - "8080:8080"  # Traefik dashboard
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      - web
+    labels:
+      - "traefik.enable=true"
+
+volumes:
+  pg_data:
+

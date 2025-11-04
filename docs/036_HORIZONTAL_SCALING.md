@@ -176,85 +176,133 @@ Rack::Attack.cache.store = Rails.cache  # Uses Solid Cache (shared DB)
 
 While you can't fully replicate production horizontal scaling locally, you can simulate it using Docker Compose or by running multiple Puma instances.
 
-### Option 1: Docker Compose (Recommended)
+### Option 1: Docker Compose with Auto-Scaling (Recommended)
 
-Create a `docker-compose.yml` to run multiple app instances behind nginx:
+This approach uses Docker Compose with a load balancer (Traefik) that automatically discovers and routes traffic to multiple app instances. This is the most production-like setup for local testing.
 
-```yaml
-# docker-compose.yml
-version: '3.8'
+#### Prerequisites
 
-services:
-  postgres:
-    image: postgres:16
-    environment:
-      POSTGRES_DB: microblog_development
-      POSTGRES_USER: ${DATABASE_USERNAME:-postgres}
-      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-}
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+1. **Docker and Docker Compose** installed (download from [docker.com](https://docker.com))
+2. **Rails Master Key**: Copy `config/master.key` or set `RAILS_MASTER_KEY` environment variable
+3. **Database credentials**: Set `DATABASE_USERNAME` and `DATABASE_PASSWORD` if needed (defaults to `postgres`)
 
-  app1:
-    build: .
-    command: bin/rails server -b 0.0.0.0 -p 3000
-    environment:
-      DATABASE_URL: postgresql://postgres:password@postgres:5432/microblog_development
-      RAILS_ENV: development
-    volumes:
-      - .:/app
-    depends_on:
-      - postgres
+#### Step 1: Prepare Your App
 
-  app2:
-    build: .
-    command: bin/rails server -b 0.0.0.0 -p 3001
-    environment:
-      DATABASE_URL: postgresql://postgres:password@postgres:5432/microblog_development
-      RAILS_ENV: development
-    volumes:
-      - .:/app
-    depends_on:
-      - postgres
+The application is already configured for horizontal scaling:
+- ✅ **Stateless**: Uses cookie-based sessions (no server-side storage needed)
+- ✅ **Shared state**: Solid Cache and Solid Queue use PostgreSQL (shared database)
+- ✅ **Health check**: `/up` endpoint available for load balancer health checks
+- ✅ **Background jobs**: Solid Queue workers can run in-process via `SOLID_QUEUE_IN_PUMA=true`
 
-  nginx:
-    image: nginx:alpine
-    ports:
-      - "8080:80"
-    volumes:
-      - ./config/nginx.conf:/etc/nginx/nginx.conf:ro
-    depends_on:
-      - app1
-      - app2
+#### Step 2: Use the Provided docker-compose.yml
 
-volumes:
-  postgres_data:
+A `docker-compose.yml` file is included in the project root. It includes:
+
+- **PostgreSQL database** (shared across all instances)
+- **Web service** (can be scaled with `--scale web=N`)
+- **Traefik load balancer** (auto-discovers web instances)
+- **Migration service** (run migrations separately)
+
+#### Step 3: Run Database Migrations
+
+First, set up the database:
+
+```bash
+# Set Rails master key (required for production mode)
+export RAILS_MASTER_KEY=$(cat config/master.key)
+
+# Run migrations
+docker compose --profile tools run migrate
 ```
 
-Create `config/nginx.conf`:
+#### Step 4: Start Services with Scaling
 
-```nginx
-upstream app {
-    least_conn;
-    server app1:3000;
-    server app2:3001;
-}
+Start with 1 instance initially:
 
-server {
-    listen 80;
-
-    location / {
-        proxy_pass http://app;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
+```bash
+docker compose up -d
 ```
 
-**Note**: This is complex for local development. Consider Option 2 for simplicity.
+Scale to multiple instances:
+
+```bash
+# Scale to 3 instances
+docker compose up -d --scale web=3
+
+# Scale to 5 instances
+docker compose up -d --scale web=5
+```
+
+**Note**: When scaling, Docker Compose automatically assigns ports in the range `3000-3009`. Traefik automatically discovers all instances and distributes traffic.
+
+#### Step 5: Access Your Application
+
+- **Application**: http://localhost (routed through Traefik load balancer)
+- **Traefik Dashboard**: http://localhost:8080 (see all services and routing)
+
+#### Step 6: Monitor Resource Usage
+
+Monitor CPU and memory across instances:
+
+```bash
+# Watch resource usage
+docker stats
+
+# View logs from all instances
+docker compose logs -f web
+
+# View logs from a specific instance
+docker compose logs -f web_1
+```
+
+#### Step 7: Test Load Distribution
+
+Use tools like `wrk` or Apache Bench to test load distribution:
+
+```bash
+# Install wrk (macOS: brew install wrk)
+wrk -t12 -c150 -d30s http://localhost/
+
+# Or use Apache Bench
+ab -n 1000 -c 10 http://localhost/
+```
+
+Watch the Traefik dashboard at http://localhost:8080 to see requests being distributed across instances.
+
+#### Advanced: Docker Swarm Mode
+
+For more advanced clustering and service discovery:
+
+```bash
+# Initialize Swarm mode
+docker swarm init
+
+# Deploy as a stack with 3 replicas
+docker stack deploy -c docker-compose.yml microblog
+
+# Scale dynamically
+docker service scale microblog_web=5
+
+# View services
+docker service ls
+
+# Remove stack
+docker stack rm microblog
+```
+
+**Note**: For Swarm mode, you'll need to update `docker-compose.yml` to add `deploy` sections with replica counts.
+
+#### Cleanup
+
+Stop and remove all containers:
+
+```bash
+# Stop containers
+docker compose down
+
+# Stop and remove volumes (clears database)
+docker compose down --volumes
+```
 
 ### Option 2: Multiple Puma Instances (Simpler)
 
