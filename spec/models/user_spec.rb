@@ -7,6 +7,7 @@ RSpec.describe User, type: :model do
     it { should have_many(:passive_follows).class_name('Follow').with_foreign_key('followed_id').dependent(:delete_all) }
     it { should have_many(:following).through(:active_follows).source(:followed) }
     it { should have_many(:followers).through(:passive_follows).source(:follower) }
+    it { should have_many(:feed_entries).dependent(:delete_all) }
   end
 
   describe 'validations' do
@@ -132,37 +133,39 @@ RSpec.describe User, type: :model do
     let(:user2) { create(:user) }
     let(:user3) { create(:user) }
 
-    before do
-      # Create posts for each user
-      create_list(:post, 2, author: user1)
-      create_list(:post, 3, author: user2)
-      create_list(:post, 1, author: user3)
+    context 'with fallback mode (no feed entries)' do
+      before do
+        # Create posts for each user
+        create_list(:post, 2, author: user1)
+        create_list(:post, 3, author: user2)
+        create_list(:post, 1, author: user3)
 
-      # User1 follows user2 and user3
-      user1.follow(user2)
-      user1.follow(user3)
-    end
+        # User1 follows user2 and user3
+        user1.follow(user2)
+        user1.follow(user3)
+      end
 
-    it 'includes posts from the user' do
-      feed = user1.feed_posts
-      expect(feed.pluck(:author_id)).to include(user1.id)
-    end
+      it 'includes posts from the user' do
+        feed = user1.feed_posts
+        expect(feed.pluck(:author_id)).to include(user1.id)
+      end
 
-    it 'includes posts from followed users' do
-      feed = user1.feed_posts
-      expect(feed.pluck(:author_id)).to include(user2.id, user3.id)
-    end
+      it 'includes posts from followed users' do
+        feed = user1.feed_posts
+        expect(feed.pluck(:author_id)).to include(user2.id, user3.id)
+      end
 
-    it 'does not include posts from non-followed users' do
-      user4 = create(:user)
-      create(:post, author: user4)
-      feed = user1.feed_posts
-      expect(feed.pluck(:author_id)).not_to include(user4.id)
-    end
+      it 'does not include posts from non-followed users' do
+        user4 = create(:user)
+        create(:post, author: user4)
+        feed = user1.feed_posts
+        expect(feed.pluck(:author_id)).not_to include(user4.id)
+      end
 
-    it 'returns all posts from user and followed users' do
-      feed = user1.feed_posts
-      expect(feed.count).to eq(6) # 2 from user1 + 3 from user2 + 1 from user3
+      it 'returns all posts from user and followed users' do
+        feed = user1.feed_posts
+        expect(feed.count).to eq(6) # 2 from user1 + 3 from user2 + 1 from user3
+      end
     end
   end
 

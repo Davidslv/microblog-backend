@@ -121,4 +121,46 @@ RSpec.describe Post, type: :model do
       end
     end
   end
+
+  describe 'fan-out on write' do
+    let(:author) { create(:user) }
+    let(:follower) { create(:user) }
+
+    before do
+      follower.follow(author)
+    end
+
+    it 'enqueues FanOutFeedJob when top-level post is created' do
+      expect {
+        post = author.posts.create!(content: "Test post")
+      }.to have_enqueued_job(FanOutFeedJob).with(a_kind_of(Integer))
+    end
+
+    it 'does not enqueue job for replies' do
+      parent_post = create(:post, author: author)
+
+      expect {
+        reply = create(:post, :reply, parent: parent_post, author: author)
+      }.not_to have_enqueued_job(FanOutFeedJob)
+    end
+
+    it 'creates feed entries for followers when post is created' do
+      expect {
+        post = author.posts.create!(content: "Test post")
+        perform_enqueued_jobs
+      }.to change { FeedEntry.where(user_id: follower.id).count }.by(1)
+    end
+
+    it 'deletes feed entries when post is deleted' do
+      post = create(:post, author: author)
+      perform_enqueued_jobs
+
+      feed_entry = FeedEntry.find_by(user_id: follower.id, post_id: post.id)
+      expect(feed_entry).to be_present
+
+      expect {
+        post.destroy
+      }.to change { FeedEntry.where(post_id: post.id).count }.by(-1)
+    end
+  end
 end

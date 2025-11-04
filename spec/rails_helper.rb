@@ -61,6 +61,9 @@ RSpec.configure do |config|
     # Use selenium for JS-dependent tests
     Capybara.javascript_driver = :selenium_headless
   end
+
+  # Include ActiveJob test helpers
+  config.include ActiveJob::TestHelper
 end
 
 # Shoulda Matchers configuration
