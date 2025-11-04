@@ -9,11 +9,11 @@ class UsersController < ApplicationController
     @user = Rails.cache.fetch("user:#{params[:id]}", expires_in: 1.hour) do
       User.find(params[:id])
     end
-    
+
     # Cache user posts with cursor-based key
     cache_key = "user_posts:#{params[:id]}:#{params[:cursor]}"
     cached_posts = Rails.cache.read(cache_key)
-    
+
     if cached_posts
       @posts, @next_cursor, @has_next = cached_posts
     else
@@ -23,7 +23,7 @@ class UsersController < ApplicationController
       )
       Rails.cache.write(cache_key, [@posts, @next_cursor, @has_next], expires_in: 5.minutes)
     end
-    
+
     @followers_count = @user.followers_count
     @following_count = @user.following_count
   end
@@ -49,7 +49,7 @@ class UsersController < ApplicationController
     # Invalidate caches before destroying
     Rails.cache.delete("user:#{@user.id}")
     Rails.cache.delete_matched("user_posts:#{@user.id}:*")
-    
+
     # Verify password if authentication is enabled (for later)
     # For now, just delete the account
     @user.destroy

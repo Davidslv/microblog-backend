@@ -27,12 +27,12 @@ class Post < ApplicationRecord
     # Invalidate feed caches for all followers of the post author
     # Use background job to avoid blocking the request
     return unless author.present?
-    
+
     # Queue background job for large follower counts
     if author.followers_count >= 100
       InvalidateFeedCacheJob.perform_later(author_id) if defined?(InvalidateFeedCacheJob)
     end
-    
+
     # Invalidate immediately for small follower counts (synchronous for < 100 followers)
     if author.followers_count < 100
       author.followers.find_each do |follower|
@@ -46,7 +46,7 @@ class Post < ApplicationRecord
     # Invalidate public posts cache when new post is created
     # Use delete_matched to clear all cursor variations
     Rails.cache.delete_matched("public_posts:*")
-    
+
     # Also invalidate author's own posts cache
     if author_id.present?
       Rails.cache.delete_matched("user_posts:#{author_id}:*")

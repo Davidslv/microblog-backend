@@ -36,11 +36,11 @@ class User < ApplicationRecord
       # Update counter caches
       decrement!(:following_count)
       other_user.decrement!(:followers_count)
-      
+
       # Invalidate feed cache when unfollowing
       # User's feed will no longer include posts from the unfollowed user
       Rails.cache.delete_matched("user_feed:#{id}:*")
-      
+
       true
     else
       false

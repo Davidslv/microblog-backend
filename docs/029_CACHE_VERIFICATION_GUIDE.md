@@ -184,7 +184,7 @@ This script tests:
 
 **Monitor cache size:**
 ```sql
-SELECT SUM(byte_size) / 1024.0 / 1024.0 as total_mb 
+SELECT SUM(byte_size) / 1024.0 / 1024.0 as total_mb
 FROM solid_cache_entries;
 ```
 

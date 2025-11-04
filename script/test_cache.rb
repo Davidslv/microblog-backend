@@ -98,7 +98,7 @@ begin
     ["%#{namespace}%"]
   ).first
   puts "   Cache entries for '#{namespace}': #{count['count'] rescue 'N/A'}"
-  
+
   # Get cache size
   size = ActiveRecord::Base.connection.execute(
     "SELECT SUM(byte_size) as total_size FROM solid_cache_entries"

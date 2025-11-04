@@ -11,30 +11,30 @@ module CacheHelper
       # Convert pattern to SQL LIKE pattern
       # e.g., "user_feed:1:*" becomes "development:user_feed:1:%"
       sql_pattern = "#{namespace}:#{pattern.gsub('*', '%')}"
-      
+
       # Get the key_hash for matching keys
       # Keys are stored as binary, so we need to decode them
       connection = ActiveRecord::Base.connection
-      
+
       # For Solid Cache, we need to query by key_hash
       # Since keys are binary, we'll use a direct SQL approach
       # Note: This is a simplified approach - in production you might want to
       # iterate through keys and match them
-      
+
       # For now, we'll delete by matching the key hash
       # Solid Cache uses key_hash as an index, so we need to find matching keys
       # This requires decoding the key column
-      
+
       # Alternative: Use Rails.cache.delete for each known key
       # For patterns, we'll need to query all keys and match them
-      
+
       # Get all cache entries for this namespace
       # Keys are stored as: namespace:actual_key
       # We need to find keys that match the pattern
-      
+
       # Since Solid Cache doesn't expose a direct way to query keys,
       # we'll use a workaround: track cache keys separately or use a different approach
-      
+
       # For now, return true (this is a limitation we need to document)
       Rails.logger.warn "CacheHelper.delete_cache_matched called with pattern: #{pattern}. Solid Cache doesn't support delete_matched - keys may not be deleted."
       true
@@ -51,7 +51,7 @@ module SolidCacheDeleteMatched
       # Convert pattern to SQL pattern
       namespace = Rails.env
       pattern = "#{namespace}:#{matcher.gsub('*', '%')}"
-      
+
       # Query Solid Cache entries table
       # Keys are stored as binary, so we need to decode them
       # This is a simplified implementation
@@ -60,11 +60,11 @@ module SolidCacheDeleteMatched
         # In development, it uses the primary database
         # In production, it uses the cache database
         connection = ActiveRecord::Base.connection
-        
+
         # Find matching entries
         # Note: This is a workaround - Solid Cache doesn't expose key matching
         # We'll need to iterate through keys or use a different strategy
-        
+
         # For now, log a warning and return
         Rails.logger.warn "delete_matched called with pattern: #{matcher}. Solid Cache limitation: pattern matching not fully supported."
         return true
