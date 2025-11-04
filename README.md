@@ -229,7 +229,7 @@ DATABASE_USERNAME=your_username
 DATABASE_PASSWORD=your_password
 
 # Job processing (optional)
-SOLID_QUEUE_IN_PUMA=true  # Run jobs in Puma process
+SOLID_QUEUE_IN_PUMA=true  # Run jobs in Puma process (OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES already set in Procfile.dev)
 JOB_CONCURRENCY=1         # Number of job processes
 ```
 

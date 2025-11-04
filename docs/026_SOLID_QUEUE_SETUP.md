@@ -10,11 +10,13 @@ Solid Queue is configured as the background job processor for this application, 
 
 Solid Queue is configured to run in development using the Puma plugin:
 
-> macOS fork safety warning (fixed with OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES)
+> macOS fork safety warning (fixed with OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES in Procfile.dev)
 
 ```bash
-SOLID_QUEUE_IN_PUMA=true OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES rails s
+SOLID_QUEUE_IN_PUMA=true bin/dev
 ```
+
+The `Procfile.dev` already includes `OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES` for the web process, so you don't need to set it manually.
 
 ### Production Environment
 

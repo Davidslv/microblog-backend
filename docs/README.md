@@ -29,7 +29,9 @@ For a comprehensive understanding, read documents in this order:
 - **014_POSTGRESQL_SETUP.md** - PostgreSQL migration guide
 - **015_WRK_RESULTS_AFTER_TUNING.md** - Results after connection pool tuning
 - **016_PG_STAT_STATEMENTS.md** - Query performance monitoring setup
+- **026_SOLID_QUEUE_SETUP.md** - Solid Queue setup and troubleshooting
 - **034_READ_REPLICAS_SETUP.md** - Read replicas configuration for production
+- **035_BIN_JOBS_SEGFAULT_ISSUE.md** - bin/jobs segfault issue and workaround
 
 ### 5. Query Analysis & Scaling
 - **017_ARCHITECTURE_AND_FEED_PROPOSALS.md** - Architecture analysis and feed proposals
@@ -65,7 +67,9 @@ For a comprehensive understanding, read documents in this order:
 - `011_POSTGRESQL_SETUP.md` - PostgreSQL setup
 - `012_PG_STAT_STATEMENTS.md` - Query monitoring
 - `017-020_QUERY_PLAN_*.md` - Query plan analysis
+- `026_SOLID_QUEUE_SETUP.md` - Solid Queue setup
 - `034_READ_REPLICAS_SETUP.md` - Read replicas setup
+- `035_BIN_JOBS_SEGFAULT_ISSUE.md` - bin/jobs segfault issue
 
 ### Architecture
 - `021_ARCHITECTURE_AND_FEED_PROPOSALS.md` - Architecture proposals
@@ -79,10 +83,10 @@ For a comprehensive understanding, read documents in this order:
 
 The most recent documents added (in reverse chronological order):
 
-1. **034_READ_REPLICAS_SETUP.md** - Read replicas configuration guide
-2. **025_BACKFILL_COUNTER_CACHES.md** - Counter cache backfilling guide (Nov 4, 10:33)
-3. **024_WHY_NOT_BACKFILL_IN_MIGRATIONS.md** - Migration best practices (Nov 4, 10:29)
-4. **023_COUNTER_CACHE_INCREMENT_LOGIC.md** - Counter cache logic (Nov 4, 10:29)
+1. **035_BIN_JOBS_SEGFAULT_ISSUE.md** - bin/jobs segfault issue and workaround (Nov 4, 16:32)
+2. **034_READ_REPLICAS_SETUP.md** - Read replicas configuration guide
+3. **025_BACKFILL_COUNTER_CACHES.md** - Counter cache backfilling guide (Nov 4, 10:33)
+4. **024_WHY_NOT_BACKFILL_IN_MIGRATIONS.md** - Migration best practices (Nov 4, 10:29)
 
 ## 📝 Document Naming Convention
 
@@ -104,5 +108,6 @@ This allows you to:
 - **Query performance?** → `017-020_QUERY_PLAN_*.md` series
 - **Counter cache?** → `023-025_*` documents
 - **Read replicas?** → `034_READ_REPLICAS_SETUP.md`
+- **Solid Queue issues?** → `026_SOLID_QUEUE_SETUP.md` or `035_BIN_JOBS_SEGFAULT_ISSUE.md`
 - **Architecture?** → `021_ARCHITECTURE_AND_FEED_PROPOSALS.md`
 
