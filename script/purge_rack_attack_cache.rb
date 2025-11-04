@@ -36,44 +36,19 @@ puts "Rack::Attack Cache Purge"
 puts "=" * 60
 puts
 
-# Helper to delete cache keys matching a pattern
+# Helper to delete cache keys
+# Note: delete_matched was removed from Rails 8
+# We can only delete specific keys or clear all cache
 def delete_cache_keys(pattern)
-  deleted = 0
-
-  # Rack::Attack stores keys with prefix: "rack::attack:#{key}"
-  # Since Solid Cache doesn't support delete_matched, we need to:
-  # 1. Query the cache database directly, or
-  # 2. Clear specific known keys, or
-  # 3. Clear all cache (if using --all)
-
-  if Rails.cache.respond_to?(:delete_matched)
-    # Some cache stores support delete_matched
-    Rails.cache.delete_matched(pattern)
-    puts "  Deleted keys matching: #{pattern}"
-  else
-    # For Solid Cache, we need to query the database
-    begin
-      # Get all cache entries
-      connection = ActiveRecord::Base.connection
-
-      # Solid Cache stores keys in solid_cache_entries table
-      # Keys are stored as binary with namespace prefix
-      namespace = Rails.env
-
-      # Try to find matching keys
-      # Note: This is a simplified approach - Solid Cache keys are binary
-      # For production, you might want to use Redis or clear all cache
-
-      puts "  Note: Solid Cache doesn't support pattern matching"
-      puts "  Clearing all cache entries..."
-      Rails.cache.clear
-      puts "  ✅ All cache cleared"
-      return true
-    rescue => e
-      puts "  ❌ Error: #{e.message}"
-      return false
-    end
-  end
+  # Pattern matching not supported - delete specific keys or clear all
+  puts "  Note: Pattern matching not supported (delete_matched removed from Rails 8)"
+  puts "  Clearing all cache entries..."
+  Rails.cache.clear
+  puts "  ✅ All cache cleared"
+  true
+rescue => e
+  puts "  ❌ Error: #{e.message}"
+  false
 end
 
 # Main logic

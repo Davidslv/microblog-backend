@@ -91,13 +91,13 @@ end
 **Invalidation Logic:**
 ```ruby
 # app/models/post.rb
-after_create :invalidate_follower_feeds
+after_create :fan_out_to_followers
 
-def invalidate_follower_feeds
-  # Invalidate caches for all followers
-  author.followers.find_each do |follower|
-    Rails.cache.delete_matched("user_feed:#{follower.id}:*")
-  end
+def fan_out_to_followers
+  # Fan-out to followers via background job
+  # Cache will expire naturally via TTL (5 minutes)
+  # Note: delete_matched was removed from Rails 8
+  FanOutFeedJob.perform_later(id)
 end
 ```
 
@@ -257,10 +257,12 @@ end
 **More control, more complexity:**
 ```ruby
 # On post creation
-Rails.cache.delete("user_feed:#{user_id}")
+# Note: delete_matched removed from Rails 8
+# Cache expires naturally via TTL (5 minutes)
+# With fan-out, feed entries are the source of truth
 
 # On follow/unfollow
-Rails.cache.delete_matched("user_feed:#{user_id}:*")
+# Feed entries are updated directly, cache expires via TTL
 ```
 
 **Pros:**

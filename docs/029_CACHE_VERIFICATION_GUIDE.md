@@ -32,7 +32,9 @@ rails console
 user = User.first
 
 # Clear cache first
-Rails.cache.delete_matched("user_feed:#{user.id}:*")
+# Note: delete_matched removed from Rails 8
+# Cache will expire naturally via TTL (5 minutes for feeds)
+# With fan-out on write, feed entries are the source of truth
 
 # First request (cache miss) - should be slower
 require 'benchmark'
@@ -173,12 +175,12 @@ This script tests:
 
 ### Cache Not Invalidating?
 
-**Note:** Solid Cache has a limitation - it doesn't fully support `delete_matched` with wildcards. The current implementation uses a workaround, but for production you may want to:
+**Note:** `delete_matched` was removed from Rails 8. The current implementation relies on TTL-based expiration:
 
-1. **Track cache keys separately** (store keys in a separate table)
-2. **Use version-based invalidation** (increment version number)
-3. **Use shorter TTLs** (let cache expire naturally)
-4. **Switch to Redis** (which fully supports pattern matching)
+1. **Short TTLs**: Cache expires naturally (1-5 minutes)
+2. **Fan-out on write**: Feed entries are the source of truth, cache is just for performance
+3. **Specific key deletion**: We only delete specific keys (e.g., `user:123`), not patterns
+4. **TTL-based expiration**: Cache automatically expires via TTL, ensuring freshness
 
 ### Cache Size Growing?
 

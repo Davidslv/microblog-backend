@@ -31,7 +31,7 @@ puts "-" * 60
 user = User.first
 exit unless user
 
-# Clear cache first (note: delete_matched has limitations in Solid Cache)
+# Clear cache first (note: delete_matched removed from Rails 8, using clear instead)
 # We'll delete known keys manually
 ["user_feed:#{user.id}:", "user_feed:#{user.id}:123"].each { |k| Rails.cache.delete(k) }
 

@@ -104,7 +104,7 @@ rack::attack:{throttle_name}:{identifier}
 
 ### Solid Cache (Current Setup)
 
-**Limitation**: Solid Cache doesn't support `delete_matched` with patterns.
+**Note**: `delete_matched` was removed from Rails 8.
 
 **Solution**: Clear all cache or delete specific keys:
 
@@ -116,14 +116,7 @@ Rails.cache.clear
 Rails.cache.delete("rack::attack:req/ip:127.0.0.1")
 ```
 
-**Via SQL** (if you need to query directly):
-```sql
--- Count Rack::Attack entries (approximate)
-SELECT COUNT(*) FROM solid_cache_entries 
-WHERE key LIKE '%rack::attack%';
-
--- Note: Keys are stored as binary, so exact matching is difficult
-```
+**Cache Expiration**: Rack::Attack cache entries expire naturally via TTL (typically 5 minutes to 1 hour depending on throttle).
 
 ---
 
@@ -132,10 +125,12 @@ WHERE key LIKE '%rack::attack%';
 **Clear all Rack::Attack keys:**
 ```ruby
 # In Rails console
-Rack::Attack.cache.store.delete_matched("rack::attack:*")
+# Note: delete_matched removed from Rails 8
+# Use clear all or specific keys
+Rack::Attack.cache.store.clear  # Clears all cache
 ```
 
-**Or via Redis CLI:**
+**Or via Redis CLI** (if using Redis):
 ```bash
 redis-cli KEYS "rack::attack:*" | xargs redis-cli DEL
 ```
