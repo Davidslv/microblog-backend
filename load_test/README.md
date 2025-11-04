@@ -56,10 +56,26 @@ rails runner script/load_test_seed.rb
 - Users: Ramps to 100 concurrent
 
 ### 4. Stress Test (`k6_stress_test.js`)
-**Purpose**: Find breaking point
-- Tests: Feed page under extreme load
+**Purpose**: Find breaking point WITH rate limiting
+- Tests: Feed page under extreme load (will trigger rate limits)
 - Duration: ~10 minutes
 - Users: Ramps to 200 concurrent
+- **Note**: This tests rate limiting behavior under stress
+
+### 5. Stress Test Without Limits (`k6_stress_test_no_limits.js`)
+**Purpose**: Find TRUE breaking point (no rate limiting)
+- Tests: Feed page under extreme load without rate limit constraints
+- Duration: ~12 minutes
+- Users: Ramps to 500 concurrent
+- **Requires**: `DISABLE_RACK_ATTACK=true` in environment
+- **Use**: To find actual application capacity
+
+### 6. Stress Test With IP Spoofing (`k6_stress_test_with_ip_spoofing.js`)
+**Purpose**: Test rate limiting with distributed load
+- Tests: Feed page with distributed users/IPs
+- Duration: ~8 minutes
+- Users: Ramps to 300 concurrent
+- **Use**: To test rate limiting behavior with realistic load distribution
 
 ## Run Tests
 
@@ -119,9 +135,37 @@ k6 run load_test/k6_feed_test.js
 k6 run load_test/k6_comprehensive.js
 ```
 
-### Stress Test
+### Stress Test (With Rate Limiting)
 ```bash
+# Tests behavior under stress with rate limiting enabled
 k6 run load_test/k6_stress_test.js
+```
+
+### Stress Test (Without Rate Limiting)
+```bash
+# Find true application capacity - disable rate limiting first
+
+# Option 1: Set environment variable in docker-compose.yml
+# Edit docker-compose.yml and add to web service:
+#   environment:
+#     DISABLE_RACK_ATTACK: "true"
+
+# Option 2: Restart with environment variable
+docker compose down
+DISABLE_RACK_ATTACK=true docker compose up -d --scale web=3
+
+# Then run stress test
+k6 run load_test/k6_stress_test_no_limits.js
+
+# Remember to re-enable rate limiting after testing!
+docker compose down
+docker compose up -d --scale web=3
+```
+
+### Stress Test (With IP Spoofing / Distributed Load)
+```bash
+# Tests rate limiting with distributed user load
+k6 run load_test/k6_stress_test_with_ip_spoofing.js
 ```
 
 ## Customize Tests
@@ -294,6 +338,38 @@ wrk -t12 -c150 -d30s -s load_test/wrk_feed.lua http://localhost:3000/
 - Pagination testing
 - Realistic user behavior
 
-See `docs/LOAD_TESTING.md` for detailed documentation.
-See `docs/TEST_SCRIPT_ANALYSIS.md` for analysis of what was fixed.
-See `docs/WRK_RESULTS_EXPLANATION.md` for interpreting wrk results.
+## Stress Testing with Rate Limiting
+
+When rack-attack is enabled, you have several options for stress testing:
+
+### Quick Reference
+
+**Test WITH rate limiting (default):**
+```bash
+k6 run load_test/k6_stress_test.js
+```
+
+**Test WITHOUT rate limiting (true capacity):**
+```bash
+# Disable rate limiting
+DISABLE_RACK_ATTACK=true docker compose up -d --scale web=3
+
+# Run test
+k6 run load_test/k6_stress_test_no_limits.js
+
+# Re-enable after testing
+docker compose down && docker compose up -d --scale web=3
+```
+
+**Test with distributed load:**
+```bash
+k6 run load_test/k6_stress_test_with_ip_spoofing.js
+```
+
+**📚 See [STRESS_TESTING_WITH_RATE_LIMITS.md](STRESS_TESTING_WITH_RATE_LIMITS.md)** for comprehensive guide on stress testing with rate limiting.
+
+---
+
+See `docs/005_LOAD_TESTING.md` for detailed documentation.
+See `docs/009_TEST_SCRIPT_ANALYSIS.md` for analysis of what was fixed.
+See `docs/008_WRK_RESULTS_EXPLANATION.md` for interpreting wrk results.
