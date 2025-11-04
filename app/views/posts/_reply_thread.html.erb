@@ -1,0 +1,30 @@
+<%# Recursively render reply threads with nesting %>
+<% depth = local_assigns[:depth] || 0 %>
+<% max_depth = 5 %>
+
+<% if depth < max_depth %>
+  <%= render 'posts/post', post: post, depth: depth %>
+  
+  <%# Show nested replies if any %>
+  <% nested_replies = post.replies.order(created_at: :asc).limit(10) %>
+  <% if nested_replies.any? %>
+    <div class="ml-8">
+      <% nested_replies.each do |nested_reply| %>
+        <%= render 'posts/reply_thread', post: nested_reply, depth: depth + 1 %>
+      <% end %>
+      <% if post.replies.count > 10 %>
+        <div class="px-4 py-2 text-sm text-gray-500">
+          <%= link_to "View #{post.replies.count - 10} more replies", post_path(post), 
+              class: "text-blue-600 hover:underline" %>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+<% else %>
+  <%# Too deep, just show a link to view the thread %>
+  <%= render 'posts/post', post: post, depth: depth %>
+  <div class="ml-8 px-4 py-2 text-sm text-gray-500">
+    <%= link_to "View thread", post_path(post), class: "text-blue-600 hover:underline" %>
+  </div>
+<% end %>
+

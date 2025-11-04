@@ -68,7 +68,14 @@ class PostsController < ApplicationController
       cursor: replies_cursor,
       order: :asc
     )
-    @reply = Post.new(parent_id: @post.id)
+    
+    # If replying to a specific reply, set the parent_id
+    # Otherwise, reply to the main post
+    if params[:reply_to].present?
+      @reply = Post.new(parent_id: params[:reply_to])
+    else
+      @reply = Post.new(parent_id: @post.id)
+    end
   end
 
   def create
@@ -76,7 +83,16 @@ class PostsController < ApplicationController
     @post.author = current_user
 
     if @post.save
-      redirect_to @post.parent || posts_path, notice: "Post created successfully!"
+      # If replying, redirect to the top-level post (original post, not intermediate replies)
+      # Otherwise redirect to posts index
+      if @post.parent
+        # Find the top-level post by walking up the parent chain
+        top_level_post = @post
+        top_level_post = top_level_post.parent while top_level_post.parent
+        redirect_to post_path(top_level_post), notice: "Post created successfully!"
+      else
+        redirect_to posts_path, notice: "Post created successfully!"
+      end
     else
       flash[:alert] = @post.errors.full_messages.join(", ")
       if @post.parent

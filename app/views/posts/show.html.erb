@@ -17,7 +17,11 @@
       <!-- Form -->
       <div class="flex-1">
         <div class="mb-2 text-sm text-gray-500">
-          Replying to <span class="text-blue-600"><%= @post.author_name %></span>
+          <% if @reply.parent_id != @post.id %>
+            Replying to <span class="text-blue-600"><%= Post.find(@reply.parent_id).author_name %></span>
+          <% else %>
+            Replying to <span class="text-blue-600"><%= @post.author_name %></span>
+          <% end %>
         </div>
         <%= form_with model: @reply, url: posts_path, local: true, class: "space-y-3" do |f| %>
           <%= f.hidden_field :parent_id %>
@@ -44,7 +48,7 @@
 <% if @replies.any? %>
   <div class="divide-y divide-gray-200">
     <% @replies.each do |reply| %>
-      <%= render 'posts/post', post: reply %>
+      <%= render 'posts/reply_thread', post: reply, depth: 0 %>
     <% end %>
   </div>
 

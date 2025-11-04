@@ -32,11 +32,11 @@ puts "=" * 80
 puts ""
 
 # Clear existing data (optional - comment out if you want to keep existing)
-puts "Clearing existing data..."
-Follow.delete_all
-Post.delete_all
-User.delete_all
-puts "Done.\n\n"
+# puts "Clearing existing data..."
+# Follow.delete_all
+# Post.delete_all
+# User.delete_all
+# puts "Done.\n\n"
 
 # Create users
 puts "Creating #{NUM_USERS} users..."
@@ -119,7 +119,6 @@ users.each_with_index do |user, user_index|
         "#{Faker::Movie.quote} #{Faker::Lorem.sentence(word_count: rand(3..8))}",
         "#{Faker::Hacker.say_something_smart} #{Faker::Lorem.sentence(word_count: rand(5..12))}",
         "#{Faker::Quote.yoda} #{Faker::Lorem.sentence(word_count: rand(3..8))}",
-        Faker::Lorem.paragraph_by_chars(characters: rand(100..200))
       ]
       post_options.sample[0..199]
     end
