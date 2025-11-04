@@ -3,9 +3,9 @@ namespace :db do
     desc "Show top slow queries from pg_stat_statements"
     task slow_queries: :environment do
       limit = ENV.fetch("LIMIT", 20).to_i
-      
+
       sql = <<-SQL
-        SELECT 
+        SELECT
           LEFT(query, 100) as query_preview,
           calls,
           total_exec_time,
@@ -20,12 +20,12 @@ namespace :db do
       SQL
 
       results = ActiveRecord::Base.connection.execute(sql)
-      
+
       puts "\n" + "="*120
       puts "Top #{limit} Slowest Queries (by mean execution time)"
       puts "="*120
       puts
-      
+
       results.each do |row|
         puts "Query: #{row['query_preview']}"
         puts "  Calls: #{row['calls']}"
@@ -41,9 +41,9 @@ namespace :db do
     desc "Show most frequently called queries"
     task frequent_queries: :environment do
       limit = ENV.fetch("LIMIT", 20).to_i
-      
+
       sql = <<-SQL
-        SELECT 
+        SELECT
           LEFT(query, 100) as query_preview,
           calls,
           total_exec_time,
@@ -55,12 +55,12 @@ namespace :db do
       SQL
 
       results = ActiveRecord::Base.connection.execute(sql)
-      
+
       puts "\n" + "="*120
       puts "Top #{limit} Most Frequent Queries"
       puts "="*120
       puts
-      
+
       results.each do |row|
         puts "Query: #{row['query_preview']}"
         puts "  Calls: #{row['calls']}"
@@ -74,9 +74,9 @@ namespace :db do
     desc "Show queries with highest total execution time"
     task total_time: :environment do
       limit = ENV.fetch("LIMIT", 20).to_i
-      
+
       sql = <<-SQL
-        SELECT 
+        SELECT
           LEFT(query, 100) as query_preview,
           calls,
           total_exec_time,
@@ -88,12 +88,12 @@ namespace :db do
       SQL
 
       results = ActiveRecord::Base.connection.execute(sql)
-      
+
       puts "\n" + "="*120
       puts "Top #{limit} Queries by Total Execution Time"
       puts "="*120
       puts
-      
+
       results.each do |row|
         puts "Query: #{row['query_preview']}"
         puts "  Calls: #{row['calls']}"
@@ -113,7 +113,7 @@ namespace :db do
     desc "Show summary statistics"
     task summary: :environment do
       sql = <<-SQL
-        SELECT 
+        SELECT
           COUNT(*) as total_queries,
           SUM(calls) as total_calls,
           SUM(total_exec_time) as total_time_ms,
@@ -123,7 +123,7 @@ namespace :db do
       SQL
 
       result = ActiveRecord::Base.connection.execute(sql).first
-      
+
       puts "\n" + "="*60
       puts "pg_stat_statements Summary"
       puts "="*60
