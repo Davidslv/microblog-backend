@@ -171,7 +171,7 @@ Transfer/sec:      1.24MB
 - With 150-250 concurrent connections, most requests wait in queue
 - If queue wait exceeds ~2 seconds, wrk times out
 
-**Impact**: 
+**Impact**:
 - **94% timeout rate** in Tests 2 & 3
 - Only 6% of requests are completing successfully
 - System is **unusable** under this load
@@ -180,7 +180,7 @@ Transfer/sec:      1.24MB
 
 **Observation**: Efficiency dropped from 65% (Test 1) to 39% (Tests 2 & 3)
 
-**Explanation**: 
+**Explanation**:
 - Test 1: System can handle load, efficient use of resources
 - Tests 2 & 3: System saturated, resources wasted on queuing/timeouts
 - 39% efficiency means **61% of capacity is wasted** on overhead
