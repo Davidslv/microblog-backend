@@ -116,7 +116,7 @@ class BackfillCounterCaches
     begin
       pending_jobs = SolidQueue::Job.where(queue_name: 'default', finished_at: nil).count
       finished_jobs = SolidQueue::Job.where(queue_name: 'default').where.not(finished_at: nil).count
-      
+
       puts "\nJob Status:"
       puts "  Pending jobs: #{pending_jobs}"
       puts "  Finished jobs: #{finished_jobs}"

@@ -7,7 +7,7 @@ Rails.application.configure do
   config.enable_reloading = true
 
   # Eager load code on boot for Solid Queue workers
-  config.eager_load = ENV["RAILS_ENV"] == "production" || ENV["SOLID_QUEUE_WORKER"] == "true"
+  config.eager_load = ENV["SOLID_QUEUE_WORKER"] == "true"
 
   # Show full error reports.
   config.consider_all_requests_local = true
@@ -55,7 +55,7 @@ Rails.application.configure do
   # Highlight code that enqueued background job in logs.
   config.active_job.verbose_enqueue_logs = true
 
-  # Use Solid Queue for background jobs in development (for backfilling)
+  # Use Solid Queue for background jobs in development
   config.active_job.queue_adapter = :solid_queue
   config.solid_queue.connects_to = { database: { writing: :primary } }
 

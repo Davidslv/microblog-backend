@@ -31,7 +31,7 @@ class Follow < ApplicationRecord
         # User already deleted or other error, skip
       end
     end
-    
+
     if User.exists?(followed_id)
       begin
         User.decrement_counter(:followers_count, followed_id)
