@@ -63,7 +63,7 @@ group :development, :test do
   # Omakase Ruby styling [https://github.com/rails/rubocop-rails-omakase/]
   gem "rubocop-rails-omakase", require: false
 
-  gem 'benchmark'
+  gem "benchmark"
 end
 
 group :development do
@@ -77,6 +77,9 @@ end
 group :test do
   # RSpec testing framework
   gem "rspec-rails", "~> 7.0"
+
+  # Code coverage tool
+  gem "simplecov", require: false
 
   # Shoulda matchers for concise model specs
   gem "shoulda-matchers", "~> 6.0"
