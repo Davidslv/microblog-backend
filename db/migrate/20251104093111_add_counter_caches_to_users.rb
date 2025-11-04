@@ -1,48 +1,15 @@
 class AddCounterCachesToUsers < ActiveRecord::Migration[8.1]
   def up
     # Add counter cache columns
+    # NOTE: Backfilling is done separately via script/backfill_counter_caches.rb
+    # See docs/WHY_NOT_BACKFILL_IN_MIGRATIONS.md for explanation
     add_column :users, :followers_count, :integer, default: 0, null: false
     add_column :users, :following_count, :integer, default: 0, null: false
     add_column :users, :posts_count, :integer, default: 0, null: false
-    
+
     # Add indexes for better performance
     add_index :users, :followers_count
     add_index :users, :following_count
-    
-    # Backfill counter caches using efficient SQL queries
-    puts "Backfilling counter caches (this may take a while)..."
-    
-    # Backfill followers_count
-    execute <<-SQL
-      UPDATE users
-      SET followers_count = (
-        SELECT COUNT(*)
-        FROM follows
-        WHERE follows.followed_id = users.id
-      )
-    SQL
-    
-    # Backfill following_count
-    execute <<-SQL
-      UPDATE users
-      SET following_count = (
-        SELECT COUNT(*)
-        FROM follows
-        WHERE follows.follower_id = users.id
-      )
-    SQL
-    
-    # Backfill posts_count
-    execute <<-SQL
-      UPDATE users
-      SET posts_count = (
-        SELECT COUNT(*)
-        FROM posts
-        WHERE posts.author_id = users.id
-      )
-    SQL
-    
-    puts "Counter caches backfilled!"
   end
 
   def down

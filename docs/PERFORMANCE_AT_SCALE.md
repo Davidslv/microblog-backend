@@ -66,8 +66,8 @@ Efficiency:       ~12% (911 requests in 30s vs potential 7500)
 
 **Generated SQL:**
 ```sql
-SELECT COUNT(*) FROM "users" 
-INNER JOIN "follows" ON "users"."id" = "follows"."follower_id" 
+SELECT COUNT(*) FROM "users"
+INNER JOIN "follows" ON "users"."id" = "follows"."follower_id"
 WHERE "follows"."followed_id" = 1
 ```
 

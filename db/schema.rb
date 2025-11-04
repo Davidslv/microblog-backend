@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_04_003743) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_04_093111) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_stat_statements"
@@ -39,9 +39,14 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_04_003743) do
   create_table "users", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "description", limit: 120
+    t.integer "followers_count", default: 0, null: false
+    t.integer "following_count", default: 0, null: false
     t.string "password_digest", null: false
+    t.integer "posts_count", default: 0, null: false
     t.datetime "updated_at", null: false
     t.string "username", limit: 50, null: false
+    t.index ["followers_count"], name: "index_users_on_followers_count"
+    t.index ["following_count"], name: "index_users_on_following_count"
     t.index ["username"], name: "index_users_on_username", unique: true
   end
 
