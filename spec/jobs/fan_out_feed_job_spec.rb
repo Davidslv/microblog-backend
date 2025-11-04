@@ -70,4 +70,3 @@ RSpec.describe FanOutFeedJob, type: :job do
     end
   end
 end
-

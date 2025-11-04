@@ -80,4 +80,3 @@ RSpec.describe BackfillFeedJob, type: :job do
     end
   end
 end
-

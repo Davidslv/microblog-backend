@@ -8,4 +8,3 @@ FactoryBot.define do
     created_at { post.created_at }
   end
 end
-

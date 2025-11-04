@@ -46,7 +46,7 @@ RSpec.describe FeedEntry, type: :model do
       it 'returns feed entries for a specific user' do
         entries = FeedEntry.for_user(user1.id)
         expect(entries.count).to eq(3)
-        expect(entries.pluck(:user_id).uniq).to eq([user1.id])
+        expect(entries.pluck(:user_id).uniq).to eq([ user1.id ])
       end
     end
 
@@ -54,7 +54,7 @@ RSpec.describe FeedEntry, type: :model do
       it 'returns feed entries from a specific author' do
         entries = FeedEntry.from_author(author.id)
         expect(entries.count).to eq(4)
-        expect(entries.pluck(:author_id).uniq).to eq([author.id])
+        expect(entries.pluck(:author_id).uniq).to eq([ author.id ])
       end
     end
 
@@ -172,4 +172,3 @@ RSpec.describe FeedEntry, type: :model do
     end
   end
 end
-
