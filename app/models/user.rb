@@ -17,7 +17,7 @@ class User < ApplicationRecord
 
     # Follow model callbacks will update counter caches automatically
     follow_record = active_follows.build(followed_id: other_user.id)
-    follow_record.save
+    follow_record.save ? true : false
   end
 
   def unfollow(other_user)
