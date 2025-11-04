@@ -23,8 +23,8 @@ class BackfillCounterCacheJob < ApplicationJob
   def backfill_followers_count(user_ids = nil)
     if user_ids
       # Process specific user IDs (batch)
-      # Use parameterized query to avoid SQL injection
-      user_ids_placeholder = user_ids.map.with_index { |_, i| "$#{i + 1}" }.join(',')
+      # Use ActiveRecord's sanitize_sql to prevent SQL injection
+      sanitized_ids = user_ids.map { |id| ActiveRecord::Base.connection.quote(id) }.join(',')
       sql = <<-SQL
         UPDATE users
         SET followers_count = (
@@ -32,18 +32,16 @@ class BackfillCounterCacheJob < ApplicationJob
           FROM follows
           WHERE follows.followed_id = users.id
         )
-        WHERE users.id IN (#{user_ids_placeholder})
+        WHERE users.id IN (#{sanitized_ids})
       SQL
       
-      ActiveRecord::Base.connection.execute(
-        ActiveRecord::Base.send(:sanitize_sql_array, [sql] + user_ids)
-      )
+      ActiveRecord::Base.connection.execute(sql)
       Rails.logger.info "Backfilled followers_count for #{user_ids.size} users"
     else
       # Enqueue batches for all users
       total_batches = (User.count.to_f / BATCH_SIZE).ceil
       batch_num = 0
-      
+
       User.find_in_batches(batch_size: BATCH_SIZE) do |batch|
         batch_num += 1
         user_ids = batch.pluck(:id)
@@ -57,7 +55,7 @@ class BackfillCounterCacheJob < ApplicationJob
   def backfill_following_count(user_ids = nil)
     if user_ids
       # Process specific user IDs (batch)
-      user_ids_placeholder = user_ids.map.with_index { |_, i| "$#{i + 1}" }.join(',')
+      sanitized_ids = user_ids.map { |id| ActiveRecord::Base.connection.quote(id) }.join(',')
       sql = <<-SQL
         UPDATE users
         SET following_count = (
@@ -65,18 +63,16 @@ class BackfillCounterCacheJob < ApplicationJob
           FROM follows
           WHERE follows.follower_id = users.id
         )
-        WHERE users.id IN (#{user_ids_placeholder})
+        WHERE users.id IN (#{sanitized_ids})
       SQL
       
-      ActiveRecord::Base.connection.execute(
-        ActiveRecord::Base.send(:sanitize_sql_array, [sql] + user_ids)
-      )
+      ActiveRecord::Base.connection.execute(sql)
       Rails.logger.info "Backfilled following_count for #{user_ids.size} users"
     else
       # Enqueue batches for all users
       total_batches = (User.count.to_f / BATCH_SIZE).ceil
       batch_num = 0
-      
+
       User.find_in_batches(batch_size: BATCH_SIZE) do |batch|
         batch_num += 1
         user_ids = batch.pluck(:id)
@@ -90,7 +86,7 @@ class BackfillCounterCacheJob < ApplicationJob
   def backfill_posts_count(user_ids = nil)
     if user_ids
       # Process specific user IDs (batch)
-      user_ids_placeholder = user_ids.map.with_index { |_, i| "$#{i + 1}" }.join(',')
+      sanitized_ids = user_ids.map { |id| ActiveRecord::Base.connection.quote(id) }.join(',')
       sql = <<-SQL
         UPDATE users
         SET posts_count = (
@@ -98,18 +94,16 @@ class BackfillCounterCacheJob < ApplicationJob
           FROM posts
           WHERE posts.author_id = users.id
         )
-        WHERE users.id IN (#{user_ids_placeholder})
+        WHERE users.id IN (#{sanitized_ids})
       SQL
       
-      ActiveRecord::Base.connection.execute(
-        ActiveRecord::Base.send(:sanitize_sql_array, [sql] + user_ids)
-      )
+      ActiveRecord::Base.connection.execute(sql)
       Rails.logger.info "Backfilled posts_count for #{user_ids.size} users"
     else
       # Enqueue batches for all users
       total_batches = (User.count.to_f / BATCH_SIZE).ceil
       batch_num = 0
-      
+
       User.find_in_batches(batch_size: BATCH_SIZE) do |batch|
         batch_num += 1
         user_ids = batch.pluck(:id)
