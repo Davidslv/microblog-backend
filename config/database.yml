@@ -7,10 +7,6 @@
 # Create databases:
 #   createdb microblog_development
 #   createdb microblog_test
-#
-# PgBouncer Support:
-#   To use PgBouncer, set USE_PGBOUNCER=true and ensure PgBouncer is running on port 6432
-#   See docs/PGBOUNCER_SETUP.md for setup instructions
 
 default: &default
   adapter: postgresql
@@ -18,11 +14,10 @@ default: &default
   pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 25 } %>
   timeout: 5000
   host: localhost
-  port: <%= ENV.fetch("USE_PGBOUNCER", "false") == "true" ? 6432 : 5432 %>
+  port: 5432
   username: <%= ENV.fetch("DATABASE_USERNAME") { ENV["USER"] } %>
   password: <%= ENV.fetch("DATABASE_PASSWORD") { "" } %>
-  # PgBouncer transaction pooling requires prepared_statements: false
-  prepared_statements: <%= ENV.fetch("USE_PGBOUNCER", "false") == "true" ? false : true %>
+  prepared_statements: true
   statement_limit: 1000
 
 development:
@@ -45,7 +40,7 @@ production:
     username: <%= ENV.fetch("DATABASE_USERNAME") { "microblog" } %>
     password: <%= ENV.fetch("DATABASE_PASSWORD") { "" } %>
     host: <%= ENV.fetch("DATABASE_HOST") { "localhost" } %>
-    port: <%= ENV.fetch("DATABASE_PORT") { ENV.fetch("USE_PGBOUNCER", "false") == "true" ? 6432 : 5432 } %>
+    port: <%= ENV.fetch("DATABASE_PORT") { 5432 } %>
   # Cache, queue, and cable use SQLite (lightweight, sufficient for these use cases)
   cache:
     adapter: sqlite3
