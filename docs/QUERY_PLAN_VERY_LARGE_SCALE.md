@@ -364,7 +364,7 @@ end
 
 **Status:** ✅ Query is well-optimized, but **application-level optimization needed**
 
-**Recommendation:** 
+**Recommendation:**
 - ✅ **Add pagination now** - Don't load all 99k followers
 - ✅ **Add counter cache** - For count display
 - ✅ **Monitor** - Track performance as scale grows

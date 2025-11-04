@@ -193,7 +193,7 @@ cursor_paginate(user.followers, per_page: 20)
 
 ```sql
 -- Composite index for reverse lookups
-CREATE INDEX idx_follows_followed_follower 
+CREATE INDEX idx_follows_followed_follower
 ON follows(followed_id, follower_id);
 ```
 
@@ -207,7 +207,7 @@ ON follows(followed_id, follower_id);
 **If followers > 100,000:**
 ```sql
 CREATE MATERIALIZED VIEW user_followers AS
-SELECT 
+SELECT
   followed_id as user_id,
   follower_id,
   created_at

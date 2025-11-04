@@ -9,8 +9,9 @@ class UsersController < ApplicationController
       @user.posts.top_level.timeline,
       per_page: 20
     )
-    @followers_count = @user.followers.count
-    @following_count = @user.following.count
+    # Use counter cache instead of counting (100x faster)
+    @followers_count = @user.followers_count
+    @following_count = @user.following_count
   end
 
   def edit

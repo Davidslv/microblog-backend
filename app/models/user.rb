@@ -1,7 +1,7 @@
 class User < ApplicationRecord
   has_secure_password
 
-  has_many :posts, foreign_key: 'author_id', dependent: :nullify
+  has_many :posts, foreign_key: 'author_id', dependent: :nullify, counter_cache: true
   has_many :active_follows, class_name: 'Follow', foreign_key: 'follower_id', dependent: :delete_all
   has_many :passive_follows, class_name: 'Follow', foreign_key: 'followed_id', dependent: :delete_all
   has_many :following, through: :active_follows, source: :followed
@@ -16,11 +16,26 @@ class User < ApplicationRecord
     return false if following?(other_user)
 
     follow_record = active_follows.build(followed_id: other_user.id)
-    follow_record.save
+    if follow_record.save
+      # Update counter caches
+      increment!(:following_count)
+      other_user.increment!(:followers_count)
+      true
+    else
+      false
+    end
   end
 
   def unfollow(other_user)
-    active_follows.where(followed_id: other_user.id).delete_all > 0
+    deleted = active_follows.where(followed_id: other_user.id).delete_all
+    if deleted > 0
+      # Update counter caches
+      decrement!(:following_count)
+      other_user.decrement!(:followers_count)
+      true
+    else
+      false
+    end
   end
 
   def following?(other_user)

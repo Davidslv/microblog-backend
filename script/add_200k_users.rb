@@ -51,13 +51,13 @@ batch_start_time = Time.current
 
 (NEW_USERS_COUNT.to_f / BATCH_SIZE).ceil.times do |batch|
   batch_size = [BATCH_SIZE, NEW_USERS_COUNT - users_created].min
-  
+
   # Generate user data
   users_data = []
   batch_size.times do |i|
     global_index = users_created + i
     username = "bulk_user_#{global_index}_#{SecureRandom.hex(6)}"
-    
+
     users_data << {
       username: username,
       password_digest: password_hash,
@@ -66,23 +66,23 @@ batch_start_time = Time.current
       updated_at: current_time
     }
   end
-  
+
   # Bulk insert users
   User.insert_all(users_data)
-  
+
   # Get the IDs efficiently (they're sequential)
   first_id = max_existing_id + 1
   batch_ids = (first_id..(first_id + batch_size - 1)).to_a
   max_existing_id += batch_size
-  
+
   new_user_ids.concat(batch_ids)
   users_created += batch_size
-  
+
   # Progress update
   elapsed = Time.current - batch_start_time
   rate = users_created / elapsed
   remaining = (NEW_USERS_COUNT - users_created) / rate rescue 0
-  
+
   print "  Batch #{batch + 1}: #{users_created}/#{NEW_USERS_COUNT} users (#{rate.round(0)} users/sec, ETA: #{remaining.round(0)}s)\r"
   $stdout.flush
 end
@@ -134,11 +134,11 @@ processed_users = 0
 new_user_ids.each do |follower_id|
   # Random number of follows for this user
   num_follows = rand(MIN_FOLLOWS_PER_USER..MAX_FOLLOWS_PER_USER)
-  
+
   # Randomly select users to follow (excluding self)
   available_users = all_available_ids.reject { |id| id == follower_id }
   followed_users = available_users.sample([num_follows, available_users.size].min)
-  
+
   followed_users.each do |followed_id|
     follows_batch << {
       follower_id: follower_id,
@@ -146,13 +146,13 @@ new_user_ids.each do |follower_id|
       created_at: current_time,
       updated_at: current_time
     }
-    
+
     # Insert in batches
     if follows_batch.size >= INSERT_BATCH_SIZE
       Follow.insert_all(follows_batch)
       total_follows += follows_batch.size
       follows_batch = []
-      
+
       # Progress update
       processed_users += 1
       elapsed = Time.current - follows_start_time
@@ -160,12 +160,12 @@ new_user_ids.each do |follower_id|
       remaining_users = new_user_ids.count - processed_users
       avg_follows_per_user = total_follows.to_f / processed_users rescue 0
       estimated_remaining = (remaining_users * avg_follows_per_user) / rate rescue 0
-      
+
       print "    Processed #{processed_users}/#{new_user_ids.count} users, #{total_follows} follows (#{rate.round(0)}/sec, ETA: #{estimated_remaining.round(0)}s)\r"
       $stdout.flush
     end
   end
-  
+
   processed_users += 1
 end
 

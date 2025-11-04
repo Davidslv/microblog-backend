@@ -101,7 +101,7 @@ end
 **Generated SQL:**
 ```sql
 SELECT DISTINCT posts.* FROM posts
-LEFT JOIN follows ON posts.author_id = follows.followed_id 
+LEFT JOIN follows ON posts.author_id = follows.followed_id
   AND follows.follower_id = ?
 WHERE posts.author_id = ? OR follows.followed_id IS NOT NULL
 ORDER BY created_at DESC
@@ -291,7 +291,7 @@ create_table :feed_entries do |t|
   t.bigint :post_id, null: false  # The post to show
   t.bigint :author_id, null: false # Denormalized for filtering
   t.datetime :created_at, null: false # Post creation time (for sorting)
-  
+
   t.index [:user_id, :created_at], order: { created_at: :desc }
   t.index [:user_id, :post_id], unique: true
   t.index :post_id
@@ -381,7 +381,7 @@ LIMIT 20
 def create
   @post = Post.new(post_params)
   @post.author = current_user
-  
+
   if @post.save
     # Fan-out to followers (async)
     FanOutFeedJob.perform_later(@post)
@@ -396,7 +396,7 @@ class FanOutFeedJob < ApplicationJob
   def perform(post)
     # Get all followers
     followers = post.author.followers
-    
+
     # Batch insert feed entries
     feed_entries = followers.map do |follower|
       {
@@ -406,7 +406,7 @@ class FanOutFeedJob < ApplicationJob
         created_at: post.created_at
       }
     end
-    
+
     # Bulk insert (efficient)
     FeedEntry.insert_all(feed_entries) if feed_entries.any?
   end
@@ -430,7 +430,7 @@ end
 # When user follows, backfill recent posts
 def follow(other_user)
   return false unless active_follows.create(followed_id: other_user.id)
-  
+
   # Backfill last 50 posts from followed user
   BackfillFeedJob.perform_later(id, other_user.id)
 end
@@ -475,7 +475,7 @@ end
 
 #### Disadvantages
 
-1. **Storage Overhead**: 
+1. **Storage Overhead**:
    - For user with 5,000 followers: 5,000 feed entries per post
    - Storage: ~1.5M posts × 2,505 avg follows × 40 bytes = ~150 GB
    - **Solution**: Partition by date, archive old entries
@@ -567,7 +567,7 @@ rails generate migration CreateFeedEntries
 **Create Materialized View:**
 ```sql
 CREATE MATERIALIZED VIEW user_feeds AS
-SELECT 
+SELECT
   f.follower_id as user_id,
   p.id as post_id,
   p.author_id,
@@ -579,7 +579,7 @@ INNER JOIN posts p ON p.author_id = f.followed_id
 WHERE p.parent_id IS NULL  -- Only top-level posts
 ORDER BY f.follower_id, p.created_at DESC;
 
-CREATE INDEX idx_user_feeds_user_created 
+CREATE INDEX idx_user_feeds_user_created
   ON user_feeds(user_id, created_at DESC);
 ```
 
@@ -636,10 +636,10 @@ def feed_posts
   # Check cache first
   cached = Rails.cache.read("user_feed:#{id}")
   return cached if cached
-  
+
   # Query materialized view (fast)
   posts = query_materialized_view(id)
-  
+
   # Cache result
   Rails.cache.write("user_feed:#{id}", posts, expires_in: 1.minute)
   posts
@@ -653,7 +653,7 @@ def query_materialized_view(user_id)
     ORDER BY created_at DESC
     LIMIT 20
   SQL
-  
+
   results = ActiveRecord::Base.connection.execute(sql, [user_id])
   post_ids = results.map { |r| r['post_id'] }
   Post.where(id: post_ids).includes(:author).order(created_at: :desc)
@@ -694,7 +694,7 @@ RETURNS TRIGGER AS $$
 BEGIN
   -- Insert into materialized view for all followers
   INSERT INTO user_feeds (user_id, post_id, author_id, content, created_at, parent_id)
-  SELECT 
+  SELECT
     f.follower_id,
     NEW.id,
     NEW.author_id,
@@ -704,7 +704,7 @@ BEGIN
   FROM follows f
   WHERE f.followed_id = NEW.author_id
     AND NEW.parent_id IS NULL;
-  
+
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -780,7 +780,7 @@ end
 
 #### Disadvantages
 
-1. **Eventual Consistency**: 
+1. **Eventual Consistency**:
    - View refresh every 5 minutes
    - New posts may not appear immediately
    - **Solution**: Incremental refresh via triggers

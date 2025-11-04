@@ -3,10 +3,10 @@
 ## Query Being Analyzed
 
 ```sql
-SELECT "users".* 
-FROM "users" 
-INNER JOIN "follows" 
-  ON "users"."id" = "follows"."follower_id" 
+SELECT "users".*
+FROM "users"
+INNER JOIN "follows"
+  ON "users"."id" = "follows"."follower_id"
 WHERE "follows"."followed_id" = 380
 ```
 
@@ -206,7 +206,7 @@ If PostgreSQL isn't using the index when the table grows:
 
 ```sql
 -- Check if index exists
-SELECT indexname FROM pg_indexes 
+SELECT indexname FROM pg_indexes
 WHERE tablename = 'users' AND indexname LIKE '%id%';
 
 -- Should already exist: primary key on users.id
