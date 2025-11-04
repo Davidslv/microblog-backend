@@ -171,3 +171,163 @@ Rack::Attack uses `Rails.cache` (Solid Cache), so rate limiting works across all
 # config/initializers/rack_attack.rb
 Rack::Attack.cache.store = Rails.cache  # Uses Solid Cache (shared DB)
 ```
+
+## Local Development Setup
+
+While you can't fully replicate production horizontal scaling locally, you can simulate it using Docker Compose or by running multiple Puma instances.
+
+### Option 1: Docker Compose (Recommended)
+
+Create a `docker-compose.yml` to run multiple app instances behind nginx:
+
+```yaml
+# docker-compose.yml
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: microblog_development
+      POSTGRES_USER: ${DATABASE_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  app1:
+    build: .
+    command: bin/rails server -b 0.0.0.0 -p 3000
+    environment:
+      DATABASE_URL: postgresql://postgres:password@postgres:5432/microblog_development
+      RAILS_ENV: development
+    volumes:
+      - .:/app
+    depends_on:
+      - postgres
+
+  app2:
+    build: .
+    command: bin/rails server -b 0.0.0.0 -p 3001
+    environment:
+      DATABASE_URL: postgresql://postgres:password@postgres:5432/microblog_development
+      RAILS_ENV: development
+    volumes:
+      - .:/app
+    depends_on:
+      - postgres
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./config/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - app1
+      - app2
+
+volumes:
+  postgres_data:
+```
+
+Create `config/nginx.conf`:
+
+```nginx
+upstream app {
+    least_conn;
+    server app1:3000;
+    server app2:3001;
+}
+
+server {
+    listen 80;
+    
+    location / {
+        proxy_pass http://app;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+**Note**: This is complex for local development. Consider Option 2 for simplicity.
+
+### Option 2: Multiple Puma Instances (Simpler)
+
+Run multiple Puma instances on different ports and use nginx locally:
+
+1. **Start multiple Puma instances**:
+
+```bash
+# Terminal 1
+PORT=3000 bin/rails server
+
+# Terminal 2
+PORT=3001 bin/rails server
+
+# Terminal 3
+PORT=3002 bin/rails server
+```
+
+2. **Install and configure nginx locally**:
+
+```bash
+# macOS
+brew install nginx
+
+# Create /usr/local/etc/nginx/servers/microblog.conf
+```
+
+```nginx
+upstream microblog {
+    least_conn;
+    server localhost:3000;
+    server localhost:3001;
+    server localhost:3002;
+}
+
+server {
+    listen 8080;
+    server_name localhost;
+    
+    location / {
+        proxy_pass http://microblog;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+3. **Start nginx**:
+
+```bash
+sudo nginx
+# or
+sudo brew services start nginx
+```
+
+4. **Access via nginx**: `http://localhost:8080`
+
+### Option 3: Foreman with Multiple Processes
+
+Create `Procfile.scale`:
+
+```
+web1: PORT=3000 bin/rails server
+web2: PORT=3001 bin/rails server
+web3: PORT=3002 bin/rails server
+```
+
+Run with:
+
+```bash
+foreman start -f Procfile.scale
+```
+
+**Note**: This runs multiple instances but doesn't include a load balancer. You'd need to manually test different ports or add nginx.
