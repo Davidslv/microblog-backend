@@ -17,6 +17,24 @@ fi
 echo "Environment: $RAILS_ENV"
 echo ""
 
+# Detect PostgreSQL superuser (usually current user on macOS, postgres on Linux)
+# Can be overridden with PGUSER environment variable
+if [ -z "$PGUSER" ]; then
+  # Try to detect current PostgreSQL superuser
+  if psql -U postgres -c "SELECT 1;" > /dev/null 2>&1; then
+    PGUSER="postgres"
+  elif psql -c "SELECT 1;" > /dev/null 2>&1; then
+    PGUSER=$(whoami)
+  else
+    # Last resort: try current user
+    PGUSER=$(whoami)
+    echo "Warning: Could not detect PostgreSQL superuser, using: $PGUSER"
+  fi
+fi
+
+echo "Using PostgreSQL superuser: $PGUSER"
+echo ""
+
 # Get credentials from environment or use defaults
 CACHE_USER="${CACHE_DB_USERNAME:-microblog_cache}"
 CACHE_PASS="${CACHE_DB_PASSWORD:-}"
@@ -58,34 +76,34 @@ create_user_and_db() {
   echo "Setting up $service_name..."
 
   # Create user if it doesn't exist
-  if psql -U postgres -t -c "SELECT 1 FROM pg_user WHERE usename='$username';" | grep -q 1; then
+  if psql -U "$PGUSER" -t -c "SELECT 1 FROM pg_user WHERE usename='$username';" 2>/dev/null | grep -q 1; then
     echo "  ✓ User '$username' already exists"
 
     # Update password if provided
     if [ -n "$password" ]; then
-      psql -U postgres -c "ALTER USER $username WITH PASSWORD '$password';" > /dev/null
+      psql -U "$PGUSER" -c "ALTER USER $username WITH PASSWORD '$password';" > /dev/null 2>&1
       echo "  ✓ Updated password for user '$username'"
     fi
   else
     if [ -n "$password" ]; then
-      psql -U postgres -c "CREATE USER $username WITH PASSWORD '$password';" > /dev/null
+      psql -U "$PGUSER" -c "CREATE USER $username WITH PASSWORD '$password';" > /dev/null 2>&1
       echo "  ✓ Created user '$username' with password"
     else
-      psql -U postgres -c "CREATE USER $username;" > /dev/null
+      psql -U "$PGUSER" -c "CREATE USER $username;" > /dev/null 2>&1
       echo "  ✓ Created user '$username' (no password)"
     fi
   fi
 
   # Create database if it doesn't exist
-  if psql -U postgres -lqt | cut -d \| -f 1 | grep -qw "$database"; then
+  if psql -U "$PGUSER" -lqt 2>/dev/null | cut -d \| -f 1 | grep -qw "$database"; then
     echo "  ✓ Database '$database' already exists"
   else
-    psql -U postgres -c "CREATE DATABASE $database OWNER $username;" > /dev/null
+    psql -U "$PGUSER" -c "CREATE DATABASE $database OWNER $username;" > /dev/null 2>&1
     echo "  ✓ Created database '$database' owned by '$username'"
   fi
 
   # Grant all privileges on database to user
-  psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE $database TO $username;" > /dev/null
+  psql -U "$PGUSER" -c "GRANT ALL PRIVILEGES ON DATABASE $database TO $username;" > /dev/null 2>&1
   echo "  ✓ Granted privileges on '$database' to '$username'"
   echo ""
 }
