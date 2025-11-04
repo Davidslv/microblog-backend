@@ -1,12 +1,18 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
-import { Rate } from 'k6/metrics';
+import { Rate, Counter } from 'k6/metrics';
 import { parseHTML } from 'k6/html';
 
 // Custom metrics
 const errorRate = new Rate('errors');
+const rateLimitHits = new Counter('rate_limit_hits'); // Track 429 responses
 
 // Test configuration
+// Note: Rate limits (rack-attack):
+// - General: 300 req/5min per IP
+// - Posts: 10/min per user
+// - Follows: 50/hour per user
+// - Feeds: 100/min per user
 export const options = {
   stages: [
     { duration: '30s', target: 10 },  // Warm up
@@ -17,10 +23,13 @@ export const options = {
     http_req_duration: ['p(95)<500'], // 95% of requests should be below 500ms
     http_req_failed: ['rate<0.01'],   // Error rate should be less than 1%
     errors: ['rate<0.01'],
+    rate_limit_hits: ['count<5'],    // Should have minimal rate limit hits
   },
 };
 
-const BASE_URL = __ENV.BASE_URL || 'http://localhost:3000';
+// Use load balancer URL (Traefik) instead of direct web server
+// This tests the full stack: Load Balancer -> Web Servers -> Database
+const BASE_URL = __ENV.BASE_URL || 'http://localhost';
 
 // Get a random user ID (assumes users exist from 1 to NUM_USERS)
 const NUM_USERS = parseInt(__ENV.NUM_USERS || '100');
@@ -64,17 +73,24 @@ export default function () {
   const cookies = loginRes.cookies;
 
   // Test feed page (most critical endpoint)
+  // Rate limit: 100 feeds/min per user - sleep 0.6s between requests to stay under limit
   const feedRes = http.get(`${BASE_URL}/`, {
     cookies: cookies,
     tags: { name: 'FeedPage' },
   });
 
+  if (feedRes.status === 429) {
+    rateLimitHits.add(1);
+    console.log(`Rate limited on feed page for user ${userId}`);
+  }
+
   check(feedRes, {
     'feed page status 200': (r) => r.status === 200,
     'feed page has content': (r) => r.body.length > 1000,
+    'not rate limited': (r) => r.status !== 429,
   }) || errorRate.add(1);
 
-  sleep(1);
+  sleep(0.6); // Stay under 100 feeds/min limit
 
   // Test filter options
   const filters = ['timeline', 'mine', 'following'];
@@ -84,11 +100,16 @@ export default function () {
     tags: { name: 'FeedPageFiltered' },
   });
 
+  if (filteredFeedRes.status === 429) {
+    rateLimitHits.add(1);
+  }
+
   check(filteredFeedRes, {
     'filtered feed status 200': (r) => r.status === 200,
+    'not rate limited': (r) => r.status !== 429,
   }) || errorRate.add(1);
 
-  sleep(1);
+  sleep(0.6); // Stay under rate limit
 
   // Test viewing a random post
   const postId = Math.floor(Math.random() * 1000) + 1;

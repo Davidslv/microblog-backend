@@ -10,8 +10,15 @@ const postRequests = new Counter('post_requests');
 const createRequests = new Counter('create_requests');
 const filterRequests = new Counter('filter_requests');
 const paginationRequests = new Counter('pagination_requests');
+const rateLimitHits = new Counter('rate_limit_hits');
 
 // Realistic load test - simulates actual user behavior
+// Tests load balancing across 3 web servers via Traefik
+// Rate limits (rack-attack):
+// - General: 300 req/5min per IP
+// - Posts: 10/min per user
+// - Follows: 50/hour per user
+// - Feeds: 100/min per user
 export const options = {
   stages: [
     { duration: '1m', target: 20 },   // Ramp up
@@ -24,10 +31,12 @@ export const options = {
     http_req_duration: ['p(95)<500', 'p(99)<1000'],
     http_req_failed: ['rate<0.01'],   // Less than 1% errors
     errors: ['rate<0.01'],
+    rate_limit_hits: ['count<100'],   // Some rate limiting expected under peak load
   },
 };
 
-const BASE_URL = __ENV.BASE_URL || 'http://localhost:3000';
+// Use load balancer URL (Traefik) - tests distributed setup
+const BASE_URL = __ENV.BASE_URL || 'http://localhost';
 const NUM_USERS = parseInt(__ENV.NUM_USERS || '1000');
 const NUM_POSTS = parseInt(__ENV.NUM_POSTS || '100000');
 
@@ -100,8 +109,13 @@ export default function () {
         tags: { name: 'FeedPage' },
       });
 
+      if (feedRes.status === 429) {
+        rateLimitHits.add(1);
+      }
+
       check(feedRes, {
         'feed status 200': (r) => r.status === 200,
+        'not rate limited': (r) => r.status !== 429,
       }) || errorRate.add(1);
 
       // 20% chance to test pagination
@@ -126,7 +140,9 @@ export default function () {
         }
       }
 
-      sleep(Math.random() * 5 + 3); // 3-8 seconds reading
+      // Sleep to stay under rate limit (100 feeds/min = 0.6s between requests)
+      // Plus reading time
+      sleep(Math.random() * 5 + 3.6); // 3.6-8.6 seconds
     }
     // 25% - View specific post
     else if (action < 0.65) {
@@ -220,11 +236,18 @@ export default function () {
         tags: { name: 'PostCreate' },
       });
 
+      if (createRes.status === 429) {
+        rateLimitHits.add(1);
+        console.log(`Rate limited on post creation for user ${userId}`);
+      }
+
       check(createRes, {
         'create status redirect': (r) => r.status === 302 || r.status === 200,
+        'not rate limited': (r) => r.status !== 429,
       }) || errorRate.add(1);
 
-      sleep(2);
+      // Rate limit: 10 posts/min per user - sleep 6s+ to stay under limit
+      sleep(6);
     }
     // 3% - Follow/unfollow
     else {
@@ -249,8 +272,13 @@ export default function () {
           tags: { name: 'Follow' },
         });
 
+        if (followRes.status === 429) {
+          rateLimitHits.add(1);
+        }
+
         check(followRes, {
           'follow status ok': (r) => r.status === 302 || r.status === 200,
+          'not rate limited': (r) => r.status !== 429,
         });
       } else {
         // Unfollow - Rails uses POST with _method=delete
@@ -263,12 +291,19 @@ export default function () {
           tags: { name: 'Unfollow' },
         });
 
+        if (unfollowRes.status === 429) {
+          rateLimitHits.add(1);
+        }
+
         check(unfollowRes, {
           'unfollow status ok': (r) => unfollowRes.status === 302 || unfollowRes.status === 200,
+          'not rate limited': (r) => unfollowRes.status !== 429,
         });
       }
 
-      sleep(1);
+      // Rate limit: 50 follows/hour per user - sleep 72s+ to stay under limit
+      // But in practice, users don't follow/unfollow that frequently, so shorter sleep is fine
+      sleep(Math.random() * 5 + 10); // 10-15 seconds between follow actions
     }
   }
 
