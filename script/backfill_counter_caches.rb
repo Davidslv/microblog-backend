@@ -113,24 +113,34 @@ class BackfillCounterCaches
   end
 
   def show_job_status
-    pending_jobs = SolidQueue::Job.where(queue_name: 'default', finished_at: nil).count
-    finished_jobs = SolidQueue::Job.where(queue_name: 'default').where.not(finished_at: nil).count
-
-    puts "\nJob Status:"
-    puts "  Pending jobs: #{pending_jobs}"
-    puts "  Finished jobs: #{finished_jobs}"
+    begin
+      pending_jobs = SolidQueue::Job.where(queue_name: 'default', finished_at: nil).count
+      finished_jobs = SolidQueue::Job.where(queue_name: 'default').where.not(finished_at: nil).count
+      
+      puts "\nJob Status:"
+      puts "  Pending jobs: #{pending_jobs}"
+      puts "  Finished jobs: #{finished_jobs}"
+    rescue ActiveRecord::StatementInvalid => e
+      puts "\nJob Status:"
+      puts "  (Solid Queue tables not yet available - jobs will be processed once job processor starts)"
+    end
   end
 
   def wait_for_completion
     loop do
-      pending = SolidQueue::Job.where(queue_name: 'default', finished_at: nil).count
-      if pending == 0
-        puts "✅ All jobs completed!"
+      begin
+        pending = SolidQueue::Job.where(queue_name: 'default', finished_at: nil).count
+        if pending == 0
+          puts "✅ All jobs completed!"
+          break
+        end
+        print "  Waiting... #{pending} jobs remaining\r"
+        $stdout.flush
+        sleep 2
+      rescue ActiveRecord::StatementInvalid
+        puts "\n⚠️  Solid Queue tables not available yet. Please start job processor first."
         break
       end
-      print "  Waiting... #{pending} jobs remaining\r"
-      $stdout.flush
-      sleep 2
     end
     puts
   end
