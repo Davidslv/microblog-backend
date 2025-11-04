@@ -34,8 +34,8 @@ development:
   primary_replica:
     <<: *default
     database: microblog_development
-    host: <%= ENV.fetch("REPLICA_HOST") { "localhost" } %>
-    port: <%= ENV.fetch("REPLICA_PORT") { 5432 } %>
+    host: <%= ENV.fetch("REPLICA_HOST") { ENV.fetch("DATABASE_HOST") { "localhost" } } %>
+    port: <%= ENV.fetch("REPLICA_PORT") { ENV.fetch("DATABASE_PORT") { 5432 } } %>
     username: <%= ENV.fetch("DATABASE_USERNAME") { ENV["USER"] } %>
     password: <%= ENV.fetch("DATABASE_PASSWORD") { "" } %>
     replica: true
