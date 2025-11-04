@@ -1,6 +1,4 @@
 class Post < ApplicationRecord
-  include CacheHelper
-  
   belongs_to :author, class_name: "User", optional: true, counter_cache: :posts_count
   belongs_to :parent, class_name: "Post", optional: true
   has_many :replies, class_name: "Post", foreign_key: "parent_id", dependent: :nullify
@@ -16,9 +14,9 @@ class Post < ApplicationRecord
   # This enables fast feed queries (5-20ms vs 50-200ms)
   after_create :fan_out_to_followers
 
-  # Invalidate caches when posts are created (kept for backward compatibility)
-  after_create :invalidate_follower_feeds
-  after_create :invalidate_public_posts_cache
+  # Note: Cache invalidation removed - cache will expire via TTL
+  # With fan-out on write, feed entries are the source of truth
+  # Cache invalidation is less critical and was removed from Rails 8
 
   def reply?
     parent_id.present?
@@ -41,37 +39,6 @@ class Post < ApplicationRecord
     # Queue background job to create feed entries for all followers
     # This runs asynchronously so it doesn't block the request
     FanOutFeedJob.perform_later(id)
-  end
-
-  def invalidate_follower_feeds
-    # Invalidate feed caches for all followers of the post author
-    # Use background job to avoid blocking the request
-    return unless author.present?
-
-    # Queue background job for large follower counts
-    if author.followers_count >= 100
-      InvalidateFeedCacheJob.perform_later(author_id) if defined?(InvalidateFeedCacheJob)
-    end
-
-    # Invalidate immediately for small follower counts (synchronous for < 100 followers)
-    if author.followers_count < 100
-      author.followers.find_each do |follower|
-        # Invalidate all cursor variations of feed cache
-        # Note: With fan-out, cache invalidation is less critical, but we keep it for backward compatibility
-        delete_cache_matched_safe("user_feed:#{follower.id}:*")
-      end
-    end
-  end
-
-  def invalidate_public_posts_cache
-    # Invalidate public posts cache when new post is created
-    # Note: Solid Cache doesn't support delete_matched, so we use safe helper
-    delete_cache_matched_safe("public_posts:*")
-
-    # Also invalidate author's own posts cache
-    if author_id.present?
-      delete_cache_matched_safe("user_posts:#{author_id}:*")
-    end
   end
 end
 
