@@ -1,0 +1,61 @@
+# Database configuration with PgBouncer
+# 
+# To use PgBouncer:
+# 1. Install PgBouncer: brew install pgbouncer (macOS) or apt-get install pgbouncer (Linux)
+# 2. Copy config/pgbouncer.ini to /etc/pgbouncer/pgbouncer.ini (or configure location)
+# 3. Start PgBouncer: pgbouncer -d /etc/pgbouncer/pgbouncer.ini
+# 4. Update database.yml to use port 6432 (PgBouncer) instead of 5432 (PostgreSQL)
+#
+# This configuration connects to PgBouncer (port 6432) which pools connections to PostgreSQL (port 5432)
+
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  # Connect to PgBouncer instead of PostgreSQL directly
+  host: localhost
+  port: 6432  # PgBouncer port (default: 6432)
+  username: <%= ENV.fetch("DATABASE_USERNAME") { ENV["USER"] } %>
+  password: <%= ENV.fetch("DATABASE_PASSWORD") { "" } %>
+  # PgBouncer handles connection pooling, so we can use more connections
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 50 } %>
+  timeout: 5000
+  # PgBouncer doesn't support prepared statements in transaction pooling mode
+  prepared_statements: false
+  statement_limit: 1000
+
+development:
+  <<: *default
+  database: microblog_development
+
+test:
+  <<: *default
+  database: microblog_test
+
+production:
+  primary:
+    <<: *default
+    database: microblog_production
+    username: <%= ENV.fetch("DATABASE_USERNAME") { "microblog" } %>
+    password: <%= ENV.fetch("DATABASE_PASSWORD") { "" } %>
+    host: <%= ENV.fetch("DATABASE_HOST") { "localhost" } %>
+    port: <%= ENV.fetch("DATABASE_PORT") { 6432 } %>
+  # Cache, queue, and cable use SQLite (lightweight, sufficient for these use cases)
+  cache:
+    adapter: sqlite3
+    pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+    timeout: 5000
+    database: storage/production_cache.sqlite3
+    migrations_paths: db/cache_migrate
+  queue:
+    adapter: sqlite3
+    pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+    timeout: 5000
+    database: storage/production_queue.sqlite3
+    migrations_paths: db/queue_migrate
+  cable:
+    adapter: sqlite3
+    pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+    timeout: 5000
+    database: storage/production_cable.sqlite3
+    migrations_paths: db/cable_migrate
+
