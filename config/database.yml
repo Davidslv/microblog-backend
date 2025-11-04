@@ -41,13 +41,14 @@ development:
     replica: true
 
   # Cache, queue, and cable use PostgreSQL (shared database for horizontal scaling)
+  # Each uses dedicated credentials for security and isolation
   cache:
     adapter: postgresql
     database: microblog_cache
     host: <%= ENV.fetch("CACHE_DB_HOST") { ENV.fetch("DATABASE_HOST") { "localhost" } } %>
     port: <%= ENV.fetch("CACHE_DB_PORT") { ENV.fetch("DATABASE_PORT") { 5432 } } %>
-    username: <%= ENV.fetch("CACHE_DB_USERNAME") { ENV.fetch("DATABASE_USERNAME") { ENV["USER"] } } %>
-    password: <%= ENV.fetch("CACHE_DB_PASSWORD") { ENV.fetch("DATABASE_PASSWORD") { "" } } %>
+    username: <%= ENV.fetch("CACHE_DB_USERNAME") { "microblog_cache" } %>
+    password: <%= ENV.fetch("CACHE_DB_PASSWORD") { "" } %>
     pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
     migrations_paths: db/cache_migrate
 
@@ -56,8 +57,8 @@ development:
     database: microblog_queue
     host: <%= ENV.fetch("QUEUE_DB_HOST") { ENV.fetch("DATABASE_HOST") { "localhost" } } %>
     port: <%= ENV.fetch("QUEUE_DB_PORT") { ENV.fetch("DATABASE_PORT") { 5432 } } %>
-    username: <%= ENV.fetch("QUEUE_DB_USERNAME") { ENV.fetch("DATABASE_USERNAME") { ENV["USER"] } } %>
-    password: <%= ENV.fetch("QUEUE_DB_PASSWORD") { ENV.fetch("DATABASE_PASSWORD") { "" } } %>
+    username: <%= ENV.fetch("QUEUE_DB_USERNAME") { "microblog_queue" } %>
+    password: <%= ENV.fetch("QUEUE_DB_PASSWORD") { "" } %>
     pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
     migrations_paths: db/queue_migrate
 
@@ -66,8 +67,8 @@ development:
     database: microblog_cable
     host: <%= ENV.fetch("CABLE_DB_HOST") { ENV.fetch("DATABASE_HOST") { "localhost" } } %>
     port: <%= ENV.fetch("CABLE_DB_PORT") { ENV.fetch("DATABASE_PORT") { 5432 } } %>
-    username: <%= ENV.fetch("CABLE_DB_USERNAME") { ENV.fetch("DATABASE_USERNAME") { ENV["USER"] } } %>
-    password: <%= ENV.fetch("CABLE_DB_PASSWORD") { ENV.fetch("DATABASE_PASSWORD") { "" } } %>
+    username: <%= ENV.fetch("CABLE_DB_USERNAME") { "microblog_cable" } %>
+    password: <%= ENV.fetch("CABLE_DB_PASSWORD") { "" } %>
     pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
     migrations_paths: db/cable_migrate
 
@@ -94,13 +95,14 @@ test:
     replica: true
 
   # Cache, queue, and cable use PostgreSQL (shared database for horizontal scaling)
+  # Each uses dedicated credentials for security and isolation
   cache:
     adapter: postgresql
     database: microblog_cache_test
     host: <%= ENV.fetch("CACHE_DB_HOST") { ENV.fetch("DATABASE_HOST") { "localhost" } } %>
     port: <%= ENV.fetch("CACHE_DB_PORT") { ENV.fetch("DATABASE_PORT") { 5432 } } %>
-    username: <%= ENV.fetch("CACHE_DB_USERNAME") { ENV.fetch("DATABASE_USERNAME") { ENV["USER"] } } %>
-    password: <%= ENV.fetch("CACHE_DB_PASSWORD") { ENV.fetch("DATABASE_PASSWORD") { "" } } %>
+    username: <%= ENV.fetch("CACHE_DB_USERNAME") { "microblog_cache" } %>
+    password: <%= ENV.fetch("CACHE_DB_PASSWORD") { "" } %>
     pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
     migrations_paths: db/cache_migrate
 
@@ -109,8 +111,8 @@ test:
     database: microblog_queue_test
     host: <%= ENV.fetch("QUEUE_DB_HOST") { ENV.fetch("DATABASE_HOST") { "localhost" } } %>
     port: <%= ENV.fetch("QUEUE_DB_PORT") { ENV.fetch("DATABASE_PORT") { 5432 } } %>
-    username: <%= ENV.fetch("QUEUE_DB_USERNAME") { ENV.fetch("DATABASE_USERNAME") { ENV["USER"] } } %>
-    password: <%= ENV.fetch("QUEUE_DB_PASSWORD") { ENV.fetch("DATABASE_PASSWORD") { "" } } %>
+    username: <%= ENV.fetch("QUEUE_DB_USERNAME") { "microblog_queue" } %>
+    password: <%= ENV.fetch("QUEUE_DB_PASSWORD") { "" } %>
     pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
     migrations_paths: db/queue_migrate
 
@@ -119,8 +121,8 @@ test:
     database: microblog_cable_test
     host: <%= ENV.fetch("CABLE_DB_HOST") { ENV.fetch("DATABASE_HOST") { "localhost" } } %>
     port: <%= ENV.fetch("CABLE_DB_PORT") { ENV.fetch("DATABASE_PORT") { 5432 } } %>
-    username: <%= ENV.fetch("CABLE_DB_USERNAME") { ENV.fetch("DATABASE_USERNAME") { ENV["USER"] } } %>
-    password: <%= ENV.fetch("CABLE_DB_PASSWORD") { ENV.fetch("DATABASE_PASSWORD") { "" } } %>
+    username: <%= ENV.fetch("CABLE_DB_USERNAME") { "microblog_cable" } %>
+    password: <%= ENV.fetch("CABLE_DB_PASSWORD") { "" } %>
     pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
     migrations_paths: db/cable_migrate
 
@@ -148,13 +150,14 @@ production:
 
   # Cache, queue, and cable use PostgreSQL (required for horizontal scaling)
   # SQLite files cannot be shared across multiple servers
+  # Each uses dedicated credentials for security and isolation
   cache:
     adapter: postgresql
     database: microblog_cache
     host: <%= ENV.fetch("CACHE_DB_HOST") { ENV.fetch("DATABASE_HOST") { "localhost" } } %>
     port: <%= ENV.fetch("CACHE_DB_PORT") { ENV.fetch("DATABASE_PORT") { 5432 } } %>
-    username: <%= ENV.fetch("CACHE_DB_USERNAME") { ENV.fetch("DATABASE_USERNAME") { "microblog" } } %>
-    password: <%= ENV.fetch("CACHE_DB_PASSWORD") { ENV.fetch("DATABASE_PASSWORD") { "" } } %>
+    username: <%= ENV.fetch("CACHE_DB_USERNAME") { "microblog_cache" } %>
+    password: <%= ENV.fetch("CACHE_DB_PASSWORD") { "" } %>
     pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
     migrations_paths: db/cache_migrate
 
@@ -163,8 +166,8 @@ production:
     database: microblog_queue
     host: <%= ENV.fetch("QUEUE_DB_HOST") { ENV.fetch("DATABASE_HOST") { "localhost" } } %>
     port: <%= ENV.fetch("QUEUE_DB_PORT") { ENV.fetch("DATABASE_PORT") { 5432 } } %>
-    username: <%= ENV.fetch("QUEUE_DB_USERNAME") { ENV.fetch("DATABASE_USERNAME") { "microblog" } } %>
-    password: <%= ENV.fetch("QUEUE_DB_PASSWORD") { ENV.fetch("DATABASE_PASSWORD") { "" } } %>
+    username: <%= ENV.fetch("QUEUE_DB_USERNAME") { "microblog_queue" } %>
+    password: <%= ENV.fetch("QUEUE_DB_PASSWORD") { "" } %>
     pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
     migrations_paths: db/queue_migrate
 
@@ -173,7 +176,7 @@ production:
     database: microblog_cable
     host: <%= ENV.fetch("CABLE_DB_HOST") { ENV.fetch("DATABASE_HOST") { "localhost" } } %>
     port: <%= ENV.fetch("CABLE_DB_PORT") { ENV.fetch("DATABASE_PORT") { 5432 } } %>
-    username: <%= ENV.fetch("CABLE_DB_USERNAME") { ENV.fetch("DATABASE_USERNAME") { "microblog" } } %>
-    password: <%= ENV.fetch("CABLE_DB_PASSWORD") { ENV.fetch("DATABASE_PASSWORD") { "" } } %>
+    username: <%= ENV.fetch("CABLE_DB_USERNAME") { "microblog_cable" } %>
+    password: <%= ENV.fetch("CABLE_DB_PASSWORD") { "" } %>
     pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
     migrations_paths: db/cable_migrate
