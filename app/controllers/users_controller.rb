@@ -46,9 +46,12 @@ class UsersController < ApplicationController
   def destroy
     # @user already set by set_user before_action
 
-    # Invalidate caches before destroying
+    # Invalidate user cache (specific key, not pattern matching)
     Rails.cache.delete("user:#{@user.id}")
-    Rails.cache.delete_matched("user_posts:#{@user.id}:*")
+    
+    # Note: user_posts cache invalidation removed - cache will expire via TTL
+    # With fan-out on write, feed entries are deleted when user is destroyed,
+    # so feed queries will be correct without cache invalidation
 
     # Verify password if authentication is enabled (for later)
     # For now, just delete the account
