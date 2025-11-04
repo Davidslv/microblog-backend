@@ -331,3 +331,327 @@ foreman start -f Procfile.scale
 ```
 
 **Note**: This runs multiple instances but doesn't include a load balancer. You'd need to manually test different ports or add nginx.
+
+## Production/Staging Setup
+
+### Prerequisites
+
+1. **Multiple application servers** (VMs, containers, or Kubernetes pods)
+2. **Load balancer** (nginx, HAProxy, AWS ALB, etc.)
+3. **Shared PostgreSQL database** (primary + read replicas)
+4. **Shared cache/queue databases** (or use the same PostgreSQL instance)
+
+### Step 1: Database Configuration
+
+Ensure all instances use the same database configuration:
+
+```yaml
+# config/database.yml
+production:
+  primary:
+    <<: *default
+    database: microblog_production
+    host: <%= ENV.fetch("DATABASE_HOST") { "db-primary.example.com" } %>
+    port: <%= ENV.fetch("DATABASE_PORT") { 5432 } %>
+
+  primary_replica:
+    <<: *default
+    database: microblog_production
+    host: <%= ENV.fetch("REPLICA_HOST") { "db-replica.example.com" } %>
+    port: <%= ENV.fetch("REPLICA_PORT") { 5432 } %>
+    replica: true
+
+  cache:
+    adapter: postgresql  # Use PostgreSQL, not SQLite!
+    database: microblog_cache
+    host: <%= ENV.fetch("CACHE_DB_HOST") { ENV.fetch("DATABASE_HOST") { "db-primary.example.com" } } %>
+    port: <%= ENV.fetch("CACHE_DB_PORT") { ENV.fetch("DATABASE_PORT") { 5432 } } %>
+    username: <%= ENV.fetch("CACHE_DB_USERNAME") { ENV.fetch("DATABASE_USERNAME") } %>
+    password: <%= ENV.fetch("CACHE_DB_PASSWORD") { ENV.fetch("DATABASE_PASSWORD") } %>
+
+  queue:
+    adapter: postgresql  # Use PostgreSQL, not SQLite!
+    database: microblog_queue
+    host: <%= ENV.fetch("QUEUE_DB_HOST") { ENV.fetch("DATABASE_HOST") { "db-primary.example.com" } } %>
+    port: <%= ENV.fetch("QUEUE_DB_PORT") { ENV.fetch("DATABASE_PORT") { 5432 } } %>
+    username: <%= ENV.fetch("QUEUE_DB_USERNAME") { ENV.fetch("DATABASE_USERNAME") } %>
+    password: <%= ENV.fetch("QUEUE_DB_PASSWORD") { ENV.fetch("DATABASE_PASSWORD") } %>
+```
+
+**CRITICAL**: The current `database.yml` uses SQLite for cache and queue in production. **You must switch to PostgreSQL before scaling horizontally**, as SQLite files cannot be shared across multiple servers. See the [Shared State Requirements](#shared-state-requirements) section above for the exact configuration changes needed.
+
+### Step 2: Environment Variables
+
+Set these environment variables on each application server:
+
+```bash
+# Database
+DATABASE_HOST=db-primary.example.com
+DATABASE_PORT=5432
+DATABASE_USERNAME=microblog
+DATABASE_PASSWORD=secure_password
+
+# Read Replica
+REPLICA_HOST=db-replica.example.com
+REPLICA_PORT=5432
+REPLICA_USERNAME=microblog
+REPLICA_PASSWORD=secure_password
+
+# Cache Database (can be same as primary)
+CACHE_DB_HOST=db-primary.example.com
+CACHE_DB_PORT=5432
+
+# Queue Database (can be same as primary)
+QUEUE_DB_HOST=db-primary.example.com
+QUEUE_DB_PORT=5432
+
+# Application
+RAILS_ENV=production
+RAILS_MASTER_KEY=your_master_key
+SECRET_KEY_BASE=your_secret_key_base
+
+# Solid Queue (if using Puma plugin)
+SOLID_QUEUE_IN_PUMA=true
+```
+
+### Step 3: Load Balancer Configuration
+
+#### Option A: nginx (Recommended for self-hosted)
+
+```nginx
+# /etc/nginx/sites-available/microblog
+upstream microblog_app {
+    # Least connections balancing
+    least_conn;
+    
+    # Application servers
+    server app1.example.com:3000 max_fails=3 fail_timeout=30s;
+    server app2.example.com:3000 max_fails=3 fail_timeout=30s;
+    server app3.example.com:3000 max_fails=3 fail_timeout=30s;
+    
+    # Enable keepalive connections
+    keepalive 32;
+}
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name microblog.example.com;
+
+    # Redirect HTTP to HTTPS
+    return 301 https://$server_name$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name microblog.example.com;
+
+    # SSL certificates (use Let's Encrypt or your CA)
+    ssl_certificate /etc/letsencrypt/live/microblog.example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/microblog.example.com/privkey.pem;
+
+    # SSL configuration
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+    ssl_prefer_server_ciphers on;
+
+    # Logging
+    access_log /var/log/nginx/microblog_access.log;
+    error_log /var/log/nginx/microblog_error.log;
+
+    # Client body size (for file uploads)
+    client_max_body_size 10M;
+
+    # Health check endpoint (bypass load balancing)
+    location /up {
+        proxy_pass http://microblog_app;
+        access_log off;
+    }
+
+    # Main application
+    location / {
+        proxy_pass http://microblog_app;
+        proxy_http_version 1.1;
+        
+        # Headers
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Port $server_port;
+        
+        # Connection settings
+        proxy_set_header Connection "";
+        proxy_buffering off;
+        
+        # Timeouts
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+        
+        # Disable buffering for streaming responses
+        proxy_buffering off;
+    }
+
+    # Static assets (optional - serve directly from nginx)
+    location /assets {
+        alias /var/www/microblog/public/assets;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+}
+```
+
+Enable the site:
+
+```bash
+sudo ln -s /etc/nginx/sites-available/microblog /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+#### Option B: HAProxy
+
+```haproxy
+# /etc/haproxy/haproxy.cfg
+global
+    log /dev/log local0
+    chroot /var/lib/haproxy
+    stats socket /run/haproxy/admin.sock mode 660 level admin
+    stats timeout 30s
+    user haproxy
+    group haproxy
+    daemon
+
+defaults
+    mode http
+    log global
+    option httplog
+    option dontlognull
+    timeout connect 5000ms
+    timeout client 50000ms
+    timeout server 50000ms
+    option forwardfor
+    option http-server-close
+
+frontend http_front
+    bind *:80
+    redirect scheme https code 301 if !{ ssl_fc }
+
+frontend https_front
+    bind *:443 ssl crt /etc/ssl/certs/microblog.pem
+    default_backend microblog_backend
+
+backend microblog_backend
+    balance leastconn
+    option httpchk GET /up
+    
+    server app1 app1.example.com:3000 check inter 5s fall 3 rise 2
+    server app2 app2.example.com:3000 check inter 5s fall 3 rise 2
+    server app3 app3.example.com:3000 check inter 5s fall 3 rise 2
+```
+
+#### Option C: AWS Application Load Balancer (ALB)
+
+If using AWS, configure an ALB:
+
+1. **Target Group**: Create a target group with health check path `/up`
+2. **Targets**: Register your EC2 instances or ECS tasks
+3. **Listener**: Configure HTTPS listener (port 443) with SSL certificate
+4. **Rules**: Set default action to forward to target group
+
+**Health Check Configuration**:
+- Path: `/up`
+- Interval: 30 seconds
+- Timeout: 5 seconds
+- Healthy threshold: 2
+- Unhealthy threshold: 3
+
+### Step 4: Worker Configuration
+
+You have two options for background job processing:
+
+#### Option 1: Workers in Each App Instance (Recommended)
+
+Run Solid Queue workers inside each Puma process using the Puma plugin:
+
+```bash
+# Set environment variable on each app server
+SOLID_QUEUE_IN_PUMA=true
+
+# Start Puma (workers run automatically)
+bin/rails server
+```
+
+**Pros**: Simpler deployment, no separate worker processes
+**Cons**: Workers compete with web requests for resources
+
+#### Option 2: Dedicated Worker Servers
+
+Run dedicated worker processes on separate servers:
+
+```bash
+# On worker servers
+bin/jobs
+```
+
+**Pros**: Isolated resources, better for CPU-intensive jobs
+**Cons**: More servers to manage, separate deployment
+
+**Note**: Due to the `bin/jobs` segfault issue with read replicas (see `docs/035_BIN_JOBS_SEGFAULT_ISSUE.md`), Option 1 is recommended for now.
+
+### Step 5: Deploy to Multiple Instances
+
+Deploy your application to each server using your preferred method:
+
+- **Capistrano**: Configure multiple servers in `config/deploy/production.rb`
+- **Docker**: Use Docker Swarm or Kubernetes to deploy multiple containers
+- **Manual**: Deploy to each server individually
+
+Ensure all instances:
+- Use the same codebase version
+- Have the same environment variables
+- Connect to the same shared databases
+- Run database migrations (or run on one instance only)
+
+## Load Balancer Configuration
+
+### Load Balancing Algorithms
+
+Choose based on your needs:
+
+1. **Least Connections** (recommended): Routes to instance with fewest active connections
+   ```nginx
+   least_conn;
+   ```
+
+2. **Round Robin** (default): Routes requests in rotation
+   ```nginx
+   # default behavior
+   ```
+
+3. **IP Hash**: Routes same IP to same instance (sticky sessions)
+   ```nginx
+   ip_hash;
+   ```
+
+4. **Weighted**: Routes more traffic to certain instances
+   ```nginx
+   server app1:3000 weight=3;
+   server app2:3000 weight=1;
+   ```
+
+### Sticky Sessions
+
+**Not Required**: This application uses cookie-based sessions, so sticky sessions are not necessary. However, if you want to ensure session affinity (e.g., for WebSocket connections), you can use IP hash:
+
+```nginx
+upstream microblog_app {
+    ip_hash;  # Same IP always goes to same server
+    server app1:3000;
+    server app2:3000;
+    server app3:3000;
+}
+```
