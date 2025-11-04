@@ -210,12 +210,14 @@ npm install
 createdb microblog_development
 createdb microblog_test
 
-# Run migrations
+# Run migrations (primary database)
 rails db:migrate
 
 # (Optional) Load seed data
 rails db:seed
 ```
+
+**Note**: The application is configured for read replicas. In development, the same database is used for both primary and replica. See [Read Replicas Setup](docs/034_READ_REPLICAS_SETUP.md) for production configuration.
 
 ### 4. Environment Variables
 

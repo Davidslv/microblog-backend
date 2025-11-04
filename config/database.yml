@@ -21,15 +21,46 @@ default: &default
   statement_limit: 1000
 
 development:
-  <<: *default
-  database: microblog_development
+  primary:
+    <<: *default
+    database: microblog_development
+    host: localhost
+    port: 5432
+    username: <%= ENV.fetch("DATABASE_USERNAME") { ENV["USER"] } %>
+    password: <%= ENV.fetch("DATABASE_PASSWORD") { "" } %>
+
+  # For development, use same database as primary (no actual replication needed)
+  # In production, this would point to a replica server
+  primary_replica:
+    <<: *default
+    database: microblog_development
+    host: <%= ENV.fetch("REPLICA_HOST") { "localhost" } %>
+    port: <%= ENV.fetch("REPLICA_PORT") { 5432 } %>
+    username: <%= ENV.fetch("DATABASE_USERNAME") { ENV["USER"] } %>
+    password: <%= ENV.fetch("DATABASE_PASSWORD") { "" } %>
+    replica: true
 
 # Warning: The database defined as "test" will be erased and
 # re-generated from your development database when you run "rake".
 # Do not set this db to the same as development or production.
 test:
-  <<: *default
-  database: microblog_test
+  primary:
+    <<: *default
+    database: microblog_test
+    host: localhost
+    port: 5432
+    username: <%= ENV.fetch("DATABASE_USERNAME") { ENV["USER"] } %>
+    password: <%= ENV.fetch("DATABASE_PASSWORD") { "" } %>
+
+  # For tests, use same database (replica support is optional)
+  primary_replica:
+    <<: *default
+    database: microblog_test
+    host: <%= ENV.fetch("REPLICA_HOST") { "localhost" } %>
+    port: <%= ENV.fetch("REPLICA_PORT") { 5432 } %>
+    username: <%= ENV.fetch("DATABASE_USERNAME") { ENV["USER"] } %>
+    password: <%= ENV.fetch("DATABASE_PASSWORD") { "" } %>
+    replica: true
 
 # Store production database in the storage/ directory, which by default
 # is mounted as a persistent Docker volume in config/deploy.yml.
@@ -41,6 +72,17 @@ production:
     password: <%= ENV.fetch("DATABASE_PASSWORD") { "" } %>
     host: <%= ENV.fetch("DATABASE_HOST") { "localhost" } %>
     port: <%= ENV.fetch("DATABASE_PORT") { 5432 } %>
+
+  # Read replica configuration
+  # In production, this should point to a replica server
+  primary_replica:
+    <<: *default
+    database: microblog_production
+    username: <%= ENV.fetch("REPLICA_USERNAME") { ENV.fetch("DATABASE_USERNAME") { "microblog" } } %>
+    password: <%= ENV.fetch("REPLICA_PASSWORD") { ENV.fetch("DATABASE_PASSWORD") { "" } } %>
+    host: <%= ENV.fetch("REPLICA_HOST") { ENV.fetch("DATABASE_HOST") { "localhost" } } %>
+    port: <%= ENV.fetch("REPLICA_PORT") { ENV.fetch("DATABASE_PORT") { 5432 } } %>
+    replica: true
   # Cache, queue, and cable use SQLite (lightweight, sufficient for these use cases)
   cache:
     adapter: sqlite3

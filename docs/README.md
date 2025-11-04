@@ -29,6 +29,7 @@ For a comprehensive understanding, read documents in this order:
 - **014_POSTGRESQL_SETUP.md** - PostgreSQL migration guide
 - **015_WRK_RESULTS_AFTER_TUNING.md** - Results after connection pool tuning
 - **016_PG_STAT_STATEMENTS.md** - Query performance monitoring setup
+- **034_READ_REPLICAS_SETUP.md** - Read replicas configuration for production
 
 ### 5. Query Analysis & Scaling
 - **017_ARCHITECTURE_AND_FEED_PROPOSALS.md** - Architecture analysis and feed proposals
@@ -64,6 +65,7 @@ For a comprehensive understanding, read documents in this order:
 - `011_POSTGRESQL_SETUP.md` - PostgreSQL setup
 - `012_PG_STAT_STATEMENTS.md` - Query monitoring
 - `017-020_QUERY_PLAN_*.md` - Query plan analysis
+- `034_READ_REPLICAS_SETUP.md` - Read replicas setup
 
 ### Architecture
 - `021_ARCHITECTURE_AND_FEED_PROPOSALS.md` - Architecture proposals
@@ -77,10 +79,10 @@ For a comprehensive understanding, read documents in this order:
 
 The most recent documents added (in reverse chronological order):
 
-1. **025_BACKFILL_COUNTER_CACHES.md** - Counter cache backfilling guide (Nov 4, 10:33)
-2. **024_WHY_NOT_BACKFILL_IN_MIGRATIONS.md** - Migration best practices (Nov 4, 10:29)
-3. **023_COUNTER_CACHE_INCREMENT_LOGIC.md** - Counter cache logic (Nov 4, 10:29)
-4. **022_PERFORMANCE_AT_SCALE.md** - Performance at 1M user scale (Nov 4, 09:32)
+1. **034_READ_REPLICAS_SETUP.md** - Read replicas configuration guide
+2. **025_BACKFILL_COUNTER_CACHES.md** - Counter cache backfilling guide (Nov 4, 10:33)
+3. **024_WHY_NOT_BACKFILL_IN_MIGRATIONS.md** - Migration best practices (Nov 4, 10:29)
+4. **023_COUNTER_CACHE_INCREMENT_LOGIC.md** - Counter cache logic (Nov 4, 10:29)
 
 ## 📝 Document Naming Convention
 
@@ -101,5 +103,6 @@ This allows you to:
 - **Database optimization?** → `008_DATABASE_OPTIMIZATION.md` and `009_FEED_QUERY_OPTIMIZATION.md`
 - **Query performance?** → `017-020_QUERY_PLAN_*.md` series
 - **Counter cache?** → `023-025_*` documents
+- **Read replicas?** → `034_READ_REPLICAS_SETUP.md`
 - **Architecture?** → `021_ARCHITECTURE_AND_FEED_PROPOSALS.md`
 

@@ -50,4 +50,8 @@ Rails.application.configure do
 
   # Raise error when a before_action's only/except options reference missing actions.
   config.action_controller.raise_on_missing_callback_actions = true
+
+  # Keep read replica routing in test (same as development)
+  # Tests use the same database for primary and replica, but we want to test the routing logic
+  # The connects_to in ApplicationRecord ensures both connections work
 end

@@ -23,5 +23,12 @@ module Microblog
     #
     # config.time_zone = "Central Time (US & Canada)"
     # config.eager_load_paths << Rails.root.join("extras")
+
+    # Configure read replicas
+    # Automatically route reads to replica, writes to primary
+    # After a write, reads go to primary for 2 seconds to avoid replication lag
+    config.active_record.database_selector = { delay: 2.seconds }
+    config.active_record.database_resolver = ActiveRecord::Middleware::DatabaseSelector::Resolver
+    config.active_record.database_resolver_context = ActiveRecord::Middleware::DatabaseSelector::Resolver::Session
   end
 end
