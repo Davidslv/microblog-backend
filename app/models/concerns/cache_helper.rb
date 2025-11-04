@@ -40,6 +40,26 @@ module CacheHelper
       true
     end
   end
+
+  # Instance method to safely handle delete_matched with Solid Cache
+  # This gracefully handles NotImplementedError from Solid Cache
+  def delete_cache_matched_safe(pattern)
+    # Safe wrapper for delete_matched that handles Solid Cache limitations
+    begin
+      if Rails.cache.respond_to?(:delete_matched)
+        Rails.cache.delete_matched(pattern)
+      else
+        # Solid Cache doesn't support delete_matched - log debug and continue
+        # Cache will expire naturally via TTL
+        Rails.logger.debug "Cache invalidation skipped for pattern: #{pattern} (Solid Cache limitation)"
+      end
+    rescue NotImplementedError => e
+      # Solid Cache throws NotImplementedError for delete_matched
+      Rails.logger.debug "Cache invalidation skipped: #{e.message}"
+    rescue => e
+      Rails.logger.warn "Error invalidating cache pattern #{pattern}: #{e.message}"
+    end
+  end
 end
 
 # Monkey patch to add delete_matched support for Solid Cache

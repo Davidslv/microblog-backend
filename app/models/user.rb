@@ -1,4 +1,6 @@
 class User < ApplicationRecord
+  include CacheHelper
+  
   has_secure_password
 
   has_many :posts, foreign_key: "author_id", dependent: :nullify
@@ -24,10 +26,11 @@ class User < ApplicationRecord
       # Fan-out on write: Backfill recent posts from the followed user
       # This ensures the new follower sees posts from the person they just followed
       BackfillFeedJob.perform_later(id, other_user.id)
-
+      
       # Invalidate feed cache when following someone new
       # User's feed will now include posts from the followed user
-      Rails.cache.delete_matched("user_feed:#{id}:*")
+      # Note: With fan-out, cache will be invalidated when feed entries are created
+      delete_cache_matched_safe("user_feed:#{id}:*")
       true
     else
       false
@@ -49,7 +52,8 @@ class User < ApplicationRecord
 
       # Invalidate feed cache when unfollowing
       # User's feed will no longer include posts from the unfollowed user
-      Rails.cache.delete_matched("user_feed:#{id}:*")
+      # Note: Feed entries are already removed above, cache invalidation is for backward compatibility
+      delete_cache_matched_safe("user_feed:#{id}:*")
 
       true
     else

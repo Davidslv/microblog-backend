@@ -1,4 +1,6 @@
 class Post < ApplicationRecord
+  include CacheHelper
+  
   belongs_to :author, class_name: "User", optional: true, counter_cache: :posts_count
   belongs_to :parent, class_name: "Post", optional: true
   has_many :replies, class_name: "Post", foreign_key: "parent_id", dependent: :nullify
@@ -55,19 +57,20 @@ class Post < ApplicationRecord
     if author.followers_count < 100
       author.followers.find_each do |follower|
         # Invalidate all cursor variations of feed cache
-        Rails.cache.delete_matched("user_feed:#{follower.id}:*")
+        # Note: With fan-out, cache invalidation is less critical, but we keep it for backward compatibility
+        delete_cache_matched_safe("user_feed:#{follower.id}:*")
       end
     end
   end
 
   def invalidate_public_posts_cache
     # Invalidate public posts cache when new post is created
-    # Use delete_matched to clear all cursor variations
-    Rails.cache.delete_matched("public_posts:*")
+    # Note: Solid Cache doesn't support delete_matched, so we use safe helper
+    delete_cache_matched_safe("public_posts:*")
 
     # Also invalidate author's own posts cache
     if author_id.present?
-      Rails.cache.delete_matched("user_posts:#{author_id}:*")
+      delete_cache_matched_safe("user_posts:#{author_id}:*")
     end
   end
 end
