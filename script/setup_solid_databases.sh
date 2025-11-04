@@ -5,6 +5,17 @@
 
 set -e
 
+# Load .env file if it exists
+# This allows the script to use environment variables from .env
+if [ -f .env ]; then
+  echo "Loading environment variables from .env file..."
+  # Use a safer method to load .env file (handles spaces and quotes)
+  set -a
+  source .env
+  set +a
+  echo ""
+fi
+
 echo "Setting up Solid Cache, Queue, and Cable databases with dedicated credentials..."
 echo ""
 
