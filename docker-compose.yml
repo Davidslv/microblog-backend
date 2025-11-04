@@ -23,7 +23,7 @@ services:
       dockerfile: Dockerfile
     command: bin/rails server -b 0.0.0.0 -p 3000
     environment:
-      RAILS_ENV: production
+      RAILS_ENV: development
       DATABASE_URL: postgresql://${DATABASE_USERNAME:-postgres}:${DATABASE_PASSWORD:-}@db:5432/microblog_development
       DATABASE_HOST: db
       DATABASE_PORT: 5432
@@ -87,7 +87,7 @@ services:
         yes | bin/rails solid_cable:install
       "
     environment:
-      RAILS_ENV: production
+      RAILS_ENV: development
       DATABASE_URL: postgresql://${DATABASE_USERNAME:-postgres}:${DATABASE_PASSWORD:-}@db:5432/microblog_development
       DATABASE_HOST: db
       DATABASE_PORT: 5432

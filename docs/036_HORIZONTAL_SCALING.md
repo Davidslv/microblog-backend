@@ -208,17 +208,21 @@ A `docker-compose.yml` file is included in the project root. It includes:
 First, set up the database:
 
 ```bash
-# Set Rails master key (required for production mode)
+# For local Docker testing, we use development environment
+# (Production would use RAILS_ENV=production and microblog_production database)
+
+# Set Rails master key (optional for development, but safe to set)
 export RAILS_MASTER_KEY=$(cat config/master.key)
 
-# Set secret key base (required for production mode)
+# Set secret key base (optional for development, but safe to set)
 # Generate a new one: bin/rails secret
-# Or use a dummy for local testing: export SECRET_KEY_BASE=dummy_secret_key_base_for_local_testing
 export SECRET_KEY_BASE=$(bin/rails secret)
 
 # Run migrations
 docker compose --profile tools run migrate
 ```
+
+**Note**: The Docker Compose setup uses `RAILS_ENV=development` for local testing. This matches the `microblog_development` database. For actual production deployment, you would use `RAILS_ENV=production` and a `microblog_production` database.
 
 #### Step 4: Start Services with Scaling
 
