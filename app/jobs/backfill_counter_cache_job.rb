@@ -34,7 +34,7 @@ class BackfillCounterCacheJob < ApplicationJob
         )
         WHERE users.id IN (#{sanitized_ids})
       SQL
-      
+
       ActiveRecord::Base.connection.execute(sql)
       Rails.logger.info "Backfilled followers_count for #{user_ids.size} users"
     else
@@ -65,7 +65,7 @@ class BackfillCounterCacheJob < ApplicationJob
         )
         WHERE users.id IN (#{sanitized_ids})
       SQL
-      
+
       ActiveRecord::Base.connection.execute(sql)
       Rails.logger.info "Backfilled following_count for #{user_ids.size} users"
     else
@@ -96,7 +96,7 @@ class BackfillCounterCacheJob < ApplicationJob
         )
         WHERE users.id IN (#{sanitized_ids})
       SQL
-      
+
       ActiveRecord::Base.connection.execute(sql)
       Rails.logger.info "Backfilled posts_count for #{user_ids.size} users"
     else

@@ -115,7 +115,7 @@ class BackfillCounterCaches
   def show_job_status
     pending_jobs = SolidQueue::Job.where(queue_name: 'default', finished_at: nil).count
     finished_jobs = SolidQueue::Job.where(queue_name: 'default').where.not(finished_at: nil).count
-    
+
     puts "\nJob Status:"
     puts "  Pending jobs: #{pending_jobs}"
     puts "  Finished jobs: #{finished_jobs}"
@@ -137,15 +137,15 @@ class BackfillCounterCaches
 
   def verify_counters
     puts "  Checking counters for accuracy..."
-    
+
     mismatches = []
     sample_size = [100, @total_users].min
-    
+
     User.limit(sample_size).find_each do |user|
       actual_followers = user.followers.count
       actual_following = user.following.count
       actual_posts = user.posts.count
-      
+
       if actual_followers != user.followers_count ||
          actual_following != user.following_count ||
          actual_posts != user.posts_count
@@ -158,7 +158,7 @@ class BackfillCounterCaches
         }
       end
     end
-    
+
     if mismatches.any?
       puts "  ⚠️  Found #{mismatches.size} mismatches in sample of #{sample_size}:"
       mismatches.first(5).each do |mismatch|
