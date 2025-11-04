@@ -35,16 +35,23 @@ Rails.application.routes.draw do
 
     get '/health' => proc { |env|
       require 'json'
+      database_name = begin
+        ActiveRecord::Base.connection.current_database
+      rescue
+        nil
+      end
+      adapter_name = begin
+        ActiveRecord::Base.connection.adapter_name
+      rescue
+        nil
+      end
       health = {
         status: 'ok',
         timestamp: Time.current.iso8601,
         database: {
           connected: ActiveRecord::Base.connection.active?,
-          size: begin
-            File.size(Rails.root.join("storage/#{Rails.env}.sqlite3"))
-          rescue
-            nil
-          end
+          database_name: database_name,
+          adapter: adapter_name
         }
       }
       [200, { 'Content-Type' => 'application/json' }, [health.to_json]]
