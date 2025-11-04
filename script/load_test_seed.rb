@@ -10,6 +10,7 @@
 #   POSTS_PER_USER=50 rails runner script/load_test_seed.rb
 
 require 'securerandom'
+require 'faker'
 
 # Configuration
 NUM_USERS = ENV.fetch('NUM_USERS', '1000').to_i
@@ -40,14 +41,38 @@ puts "Done.\n\n"
 # Create users
 puts "Creating #{NUM_USERS} users..."
 users = []
+Faker::Config.random = Random.new
+
 NUM_USERS.times do |i|
-  user = User.create!(
-    username: "user#{i + 1}",
-    description: i % 3 == 0 ? "Test user #{i + 1} description" : nil,
-    password: "password123",
-    password_confirmation: "password123"
-  )
-  users << user
+  # Generate unique username using Faker (max 50 chars per validation)
+  # Faker::Internet.unique.username can exceed 50 chars, so we'll truncate
+  base_username = Faker::Internet.unique.username
+  username = base_username[0..49] # Ensure max 50 chars
+  
+  # If username is too short or already taken, add a number
+  if username.length < 3
+    username = "#{base_username}_#{i + 1}"[0..49]
+  end
+  
+  # Retry if username already exists (shouldn't happen with unique, but be safe)
+  retries = 0
+  begin
+    user = User.create!(
+      username: username,
+      description: i % 3 == 0 ? Faker::Lorem.sentence(word_count: 10)[0..119] : nil, # Max 120 chars
+      password: "password123",
+      password_confirmation: "password123"
+    )
+    users << user
+  rescue ActiveRecord::RecordInvalid => e
+    if e.message.include?("Username has already been taken") && retries < 3
+      username = "#{base_username}_#{SecureRandom.hex(3)}"[0..49]
+      retries += 1
+      retry
+    else
+      raise
+    end
+  end
 
   if (i + 1) % 100 == 0
     puts "  Created #{i + 1} users..."
@@ -73,14 +98,33 @@ users.each_with_index do |user, user_index|
       parent_id = parent_post.id
     end
 
-    # Create post with realistic content
+    # Create post with realistic content using Faker
+    # Max 200 chars per validation
     content = if is_reply
-      "Reply to post #{parent_id}: This is reply #{post_index} from #{user.username}"
+      # Replies are shorter and more conversational
+      reply_options = [
+        Faker::Lorem.sentence(word_count: rand(5..15)),
+        Faker::Quote.famous_last_words,
+        Faker::Quote.matz,
+        "#{Faker::Adjective.positive.capitalize}! #{Faker::Lorem.sentence(word_count: rand(3..10))}",
+        "I agree with that. #{Faker::Lorem.sentence(word_count: rand(5..12))}",
+        "That's interesting. #{Faker::Lorem.sentence(word_count: rand(4..10))}"
+      ]
+      reply_options.sample[0..199]
     else
-      "Post #{post_index + 1} from #{user.username}: #{SecureRandom.alphanumeric(50)}"
+      # Top-level posts can be longer
+      post_options = [
+        Faker::Lorem.paragraph(sentence_count: rand(2..4)),
+        "#{Faker::Quote.most_interesting_man_in_the_world} #{Faker::Lorem.sentence(word_count: rand(5..10))}",
+        "#{Faker::Movie.quote} #{Faker::Lorem.sentence(word_count: rand(3..8))}",
+        "#{Faker::Hacker.say_something_smart} #{Faker::Lorem.sentence(word_count: rand(5..12))}",
+        "#{Faker::Quote.yoda} #{Faker::Lorem.sentence(word_count: rand(3..8))}",
+        Faker::Lorem.paragraph_by_chars(characters: rand(100..200))
+      ]
+      post_options.sample[0..199]
     end
 
-    # Ensure content is within limit
+    # Ensure content is within limit (should already be, but double-check)
     content = content[0..199]
 
     post = Post.create!(
