@@ -48,12 +48,12 @@ NUM_USERS.times do |i|
   # Faker::Internet.unique.username can exceed 50 chars, so we'll truncate
   base_username = Faker::Internet.unique.username
   username = base_username[0..49] # Ensure max 50 chars
-  
+
   # If username is too short or already taken, add a number
   if username.length < 3
     username = "#{base_username}_#{i + 1}"[0..49]
   end
-  
+
   # Retry if username already exists (shouldn't happen with unique, but be safe)
   retries = 0
   begin
