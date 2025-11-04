@@ -15,27 +15,15 @@ class User < ApplicationRecord
     return false if self == other_user
     return false if following?(other_user)
 
+    # Follow model callbacks will update counter caches automatically
     follow_record = active_follows.build(followed_id: other_user.id)
-    if follow_record.save
-      # Update counter caches
-      increment!(:following_count)
-      other_user.increment!(:followers_count)
-      true
-    else
-      false
-    end
+    follow_record.save
   end
 
   def unfollow(other_user)
-    deleted = active_follows.where(followed_id: other_user.id).delete_all
-    if deleted > 0
-      # Update counter caches
-      decrement!(:following_count)
-      other_user.decrement!(:followers_count)
-      true
-    else
-      false
-    end
+    # Follow model callbacks will update counter caches automatically
+    # Use destroy_all to trigger callbacks (delete_all doesn't trigger callbacks)
+    active_follows.where(followed_id: other_user.id).destroy_all.any?
   end
 
   def following?(other_user)
