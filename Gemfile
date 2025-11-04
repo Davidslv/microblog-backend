@@ -44,6 +44,9 @@ gem "image_processing", "~> 1.2"
 # Tailwind CSS for modern, utility-first styling
 gem "tailwindcss-rails"
 
+# Rate limiting middleware to protect against abuse and DDoS
+gem "rack-attack"
+
 # Note: We use custom cursor-based pagination (no gem needed)
 # See: app/controllers/application_controller.rb#cursor_paginate
 
@@ -64,7 +67,7 @@ end
 group :development do
   # Use console on exceptions pages [https://github.com/rails/web-console]
   gem "web-console"
-  
+
   # Mission Control – Jobs: UI for monitoring Solid Queue jobs
   gem "mission_control-jobs"
 end
