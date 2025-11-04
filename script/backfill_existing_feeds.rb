@@ -173,4 +173,3 @@ puts "Next steps:"
 puts "1. Verify feed entries: SELECT COUNT(*) FROM feed_entries;"
 puts "2. Test feed queries: rails runner 'puts User.first.feed_posts.count'"
 puts "3. Monitor performance improvements"
-

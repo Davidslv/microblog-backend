@@ -20,7 +20,7 @@ puts
 # Test 2: Cache key existence
 puts "2. Testing Cache Key Existence"
 puts "-" * 60
-Rails.cache.write("user_feed:1:", ["posts", "cursor", true], expires_in: 5.minutes)
+Rails.cache.write("user_feed:1:", [ "posts", "cursor", true ], expires_in: 5.minutes)
 exists = Rails.cache.exist?("user_feed:1:")
 puts "   Cache key exists: #{exists ? '✅ PASS' : '❌ FAIL'}"
 puts
@@ -33,7 +33,7 @@ exit unless user
 
 # Clear cache first (note: delete_matched removed from Rails 8, using clear instead)
 # We'll delete known keys manually
-["user_feed:#{user.id}:", "user_feed:#{user.id}:123"].each { |k| Rails.cache.delete(k) }
+[ "user_feed:#{user.id}:", "user_feed:#{user.id}:123" ].each { |k| Rails.cache.delete(k) }
 
 # Cache miss (first request)
 puts "   First request (cache miss):"
@@ -55,7 +55,7 @@ time_hit = Benchmark.realtime do
   else
     posts_relation = user.feed_posts.timeline
     posts = posts_relation.limit(20).to_a
-    Rails.cache.write(cache_key, [posts, nil, false], expires_in: 5.minutes)
+    Rails.cache.write(cache_key, [ posts, nil, false ], expires_in: 5.minutes)
   end
 end
 puts "     Time: #{(time_hit * 1000).round(2)}ms"
@@ -81,7 +81,7 @@ puts
 puts "5. Testing Cache Invalidation"
 puts "-" * 60
 test_key = "user_feed:999:"
-Rails.cache.write(test_key, ["test"], expires_in: 5.minutes)
+Rails.cache.write(test_key, [ "test" ], expires_in: 5.minutes)
 puts "   Before deletion: #{Rails.cache.exist?(test_key) ? 'exists' : 'missing'}"
 Rails.cache.delete(test_key)
 puts "   After deletion: #{Rails.cache.exist?(test_key) ? '❌ FAIL (still exists)' : '✅ PASS (deleted)'}"
@@ -95,7 +95,7 @@ begin
   namespace = Rails.env
   count = ActiveRecord::Base.connection.execute(
     "SELECT COUNT(*) as count FROM solid_cache_entries WHERE key LIKE ?",
-    ["%#{namespace}%"]
+    [ "%#{namespace}%" ]
   ).first
   puts "   Cache entries for '#{namespace}': #{count['count'] rescue 'N/A'}"
 
@@ -119,4 +119,3 @@ puts "1. Check Rails logs for 'Cache read' and 'Cache write' messages"
 puts "2. Compare response times (first request vs subsequent requests)"
 puts "3. Monitor database query counts (should decrease with caching)"
 puts "4. Check Solid Cache table size: SELECT COUNT(*) FROM solid_cache_entries"
-

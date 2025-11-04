@@ -65,7 +65,7 @@ elsif options[:ip]
   puts
 
   # Clear all throttles for this IP
-  throttles = ['req/ip', 'posts/create', 'feed/requests', 'api/requests']
+  throttles = [ 'req/ip', 'posts/create', 'feed/requests', 'api/requests' ]
   throttles.each do |throttle|
     key = "rack::attack:#{throttle}:#{options[:ip]}"
     Rails.cache.delete(key)
@@ -78,7 +78,7 @@ elsif options[:user_id]
   puts
 
   # Clear user-specific throttles
-  throttles = ['posts/create', 'follows/action', 'feed/requests']
+  throttles = [ 'posts/create', 'follows/action', 'feed/requests' ]
   throttles.each do |throttle|
     key = "rack::attack:#{throttle}:#{options[:user_id]}"
     Rails.cache.delete(key)
@@ -114,4 +114,3 @@ puts
 puts "=" * 60
 puts "Done!"
 puts "=" * 60
-

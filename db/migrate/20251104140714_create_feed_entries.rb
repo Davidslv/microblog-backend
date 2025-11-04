@@ -23,13 +23,13 @@ class CreateFeedEntries < ActiveRecord::Migration[8.1]
 
     # Index for fast feed queries: Get posts for a user, ordered by creation time
     # This is the primary query pattern: WHERE user_id = ? ORDER BY created_at DESC
-    add_index :feed_entries, [:user_id, :created_at],
+    add_index :feed_entries, [ :user_id, :created_at ],
               order: { created_at: :desc },
               name: "index_feed_entries_on_user_id_and_created_at_desc"
 
     # Unique index to prevent duplicate feed entries
     # Ensures a post appears only once per user's feed
-    add_index :feed_entries, [:user_id, :post_id],
+    add_index :feed_entries, [ :user_id, :post_id ],
               unique: true,
               name: "index_feed_entries_on_user_id_and_post_id"
 
@@ -38,7 +38,7 @@ class CreateFeedEntries < ActiveRecord::Migration[8.1]
               name: "index_feed_entries_on_post_id"
 
     # Index for cleanup: Find all entries from a specific author (when unfollowing)
-    add_index :feed_entries, [:user_id, :author_id],
+    add_index :feed_entries, [ :user_id, :author_id ],
               name: "index_feed_entries_on_user_id_and_author_id"
 
     # Foreign key constraints for data integrity

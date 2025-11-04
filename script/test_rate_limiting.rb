@@ -117,4 +117,3 @@ puts "1. Start your Rails server: rails server"
 puts "2. Run this script: rails runner script/test_rate_limiting.rb"
 puts "3. Make many rapid requests to trigger rate limits"
 puts "4. Check for 429 responses with rate limit headers"
-
