@@ -109,7 +109,7 @@ users.each_with_index do |follower, follower_index|
   num_follows = rand(MIN_FOLLOWS..MAX_FOLLOWS)
 
   # Get random users to follow (excluding self)
-  users_to_follow = (users - [follower]).sample(num_follows)
+  users_to_follow = (users - [ follower ]).sample(num_follows)
 
   users_to_follow.each do |followed|
     begin
@@ -150,4 +150,3 @@ puts ""
 puts "You can now run load tests:"
 puts "  k6 run load_test/k6_baseline.js"
 puts "  k6 run load_test/k6_comprehensive.js"
-

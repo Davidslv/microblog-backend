@@ -195,4 +195,3 @@ RSpec.describe 'End-to-End User Journey', type: :feature do
     end
   end
 end
-

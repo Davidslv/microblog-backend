@@ -116,4 +116,3 @@ RSpec.describe 'Following Feature', type: :feature do
     end
   end
 end
-

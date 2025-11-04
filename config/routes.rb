@@ -13,28 +13,28 @@ Rails.application.routes.draw do
   root "posts#index"
 
   # Posts
-  resources :posts, only: [:index, :show, :create]
+  resources :posts, only: [ :index, :show, :create ]
 
   # Users
-  resources :users, only: [:show, :edit, :update, :destroy]
+  resources :users, only: [ :show, :edit, :update, :destroy ]
 
   # Following
-  post '/follow/:user_id', to: 'follows#create', as: 'follow'
-  delete '/follow/:user_id', to: 'follows#destroy'
+  post "/follow/:user_id", to: "follows#create", as: "follow"
+  delete "/follow/:user_id", to: "follows#destroy"
 
   # Temporary dev route - remove before production!
-  get '/dev/login/:user_id', to: 'application#dev_login', as: 'dev_login'
+  get "/dev/login/:user_id", to: "application#dev_login", as: "dev_login"
 
   # Monitoring endpoints (development only)
   if Rails.env.development?
-    get '/puma/stats' => proc { |env|
-      require 'json'
+    get "/puma/stats" => proc { |env|
+      require "json"
       stats = Puma.stats
-      [200, { 'Content-Type' => 'application/json' }, [stats.to_json]]
+      [ 200, { "Content-Type" => "application/json" }, [ stats.to_json ] ]
     }
 
-    get '/health' => proc { |env|
-      require 'json'
+    get "/health" => proc { |env|
+      require "json"
       database_name = begin
         ActiveRecord::Base.connection.current_database
       rescue
@@ -46,7 +46,7 @@ Rails.application.routes.draw do
         nil
       end
       health = {
-        status: 'ok',
+        status: "ok",
         timestamp: Time.current.iso8601,
         database: {
           connected: ActiveRecord::Base.connection.active?,
@@ -54,7 +54,7 @@ Rails.application.routes.draw do
           adapter: adapter_name
         }
       }
-      [200, { 'Content-Type' => 'application/json' }, [health.to_json]]
+      [ 200, { "Content-Type" => "application/json" }, [ health.to_json ] ]
     }
   end
 end

@@ -40,10 +40,10 @@ class ApplicationController < ActionController::Base
     if cursor_id.present? && cursor_id > 0
       if order == :asc
         # For ASC order (oldest first), get posts with ID greater than cursor
-        relation = relation.where('posts.id > ?', cursor_id)
+        relation = relation.where("posts.id > ?", cursor_id)
       else
         # For DESC order (newest first), get posts with ID less than cursor
-        relation = relation.where('posts.id < ?', cursor_id)
+        relation = relation.where("posts.id < ?", cursor_id)
       end
     end
 
@@ -57,6 +57,6 @@ class ApplicationController < ActionController::Base
     # Get the cursor for next page (ID of last post on current page)
     next_cursor = posts.last&.id
 
-    [posts, next_cursor, has_next]
+    [ posts, next_cursor, has_next ]
   end
 end

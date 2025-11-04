@@ -39,7 +39,7 @@ new_user_ids = []
 max_existing_id = User.maximum(:id) || 0
 
 (NEW_USERS_COUNT.to_f / BATCH_SIZE).ceil.times do |batch|
-  batch_size = [BATCH_SIZE, NEW_USERS_COUNT - users_created].min
+  batch_size = [ BATCH_SIZE, NEW_USERS_COUNT - users_created ].min
 
   # Generate user data
   users_data = []
@@ -106,7 +106,7 @@ new_user_ids.each do |follower_id|
 
   # Randomly select users to follow (excluding self)
   available_users = all_available_ids.reject { |id| id == follower_id }
-  followed_users = available_users.sample([num_follows, available_users.size].min)
+  followed_users = available_users.sample([ num_follows, available_users.size ].min)
 
   followed_users.each do |followed_id|
     follows_batch << {
@@ -157,4 +157,3 @@ target_user.reload
 puts "User.first followers: #{target_user.followers.count}"
 puts "User.first following: #{target_user.following.count}"
 puts "\n✅ Done!"
-

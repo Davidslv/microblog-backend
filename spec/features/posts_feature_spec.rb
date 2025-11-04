@@ -133,4 +133,3 @@ RSpec.describe 'Posts Feature', type: :feature do
     end
   end
 end
-

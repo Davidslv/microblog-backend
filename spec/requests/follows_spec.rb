@@ -119,4 +119,3 @@ RSpec.describe 'Follows', type: :request do
     end
   end
 end
-

@@ -1,6 +1,6 @@
 class FollowsController < ApplicationController
   before_action :require_login
-  before_action :set_followed_user, only: [:create, :destroy]
+  before_action :set_followed_user, only: [ :create, :destroy ]
 
   def create
     if current_user.follow(@followed_user)
@@ -26,8 +26,7 @@ class FollowsController < ApplicationController
 
   def require_login
     unless logged_in?
-      redirect_to root_path, alert: 'You must be logged in to follow users.'
+      redirect_to root_path, alert: "You must be logged in to follow users."
     end
   end
 end
-

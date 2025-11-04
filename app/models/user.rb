@@ -1,9 +1,9 @@
 class User < ApplicationRecord
   has_secure_password
 
-  has_many :posts, foreign_key: 'author_id', dependent: :nullify, counter_cache: true
-  has_many :active_follows, class_name: 'Follow', foreign_key: 'follower_id', dependent: :delete_all
-  has_many :passive_follows, class_name: 'Follow', foreign_key: 'followed_id', dependent: :delete_all
+  has_many :posts, foreign_key: "author_id", dependent: :nullify, counter_cache: true
+  has_many :active_follows, class_name: "Follow", foreign_key: "follower_id", dependent: :delete_all
+  has_many :passive_follows, class_name: "Follow", foreign_key: "followed_id", dependent: :delete_all
   has_many :following, through: :active_follows, source: :followed
   has_many :followers, through: :passive_follows, source: :follower
 
@@ -44,4 +44,3 @@ class User < ApplicationRecord
     ).distinct
   end
 end
-

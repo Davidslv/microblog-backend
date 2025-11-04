@@ -199,4 +199,3 @@ RSpec.describe 'Users Feature', type: :feature do
     end
   end
 end
-

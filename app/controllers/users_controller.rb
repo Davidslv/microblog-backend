@@ -1,7 +1,7 @@
 class UsersController < ApplicationController
-  before_action :set_user, only: [:show, :edit, :update, :destroy]
-  before_action :require_login, only: [:edit, :update, :destroy]
-  before_action :require_owner, only: [:edit, :update, :destroy]
+  before_action :set_user, only: [ :show, :edit, :update, :destroy ]
+  before_action :require_login, only: [ :edit, :update, :destroy ]
+  before_action :require_owner, only: [ :edit, :update, :destroy ]
 
   def show
     # Paginate user posts using cursor-based pagination
@@ -20,11 +20,10 @@ class UsersController < ApplicationController
   end
 
   def update
-
     if @user.update(user_params)
-      redirect_to @user, notice: 'Settings updated successfully!'
+      redirect_to @user, notice: "Settings updated successfully!"
     else
-      flash[:alert] = @user.errors.full_messages.join(', ')
+      flash[:alert] = @user.errors.full_messages.join(", ")
       render :edit, status: :unprocessable_entity
     end
   end
@@ -36,7 +35,7 @@ class UsersController < ApplicationController
     # For now, just delete the account
     @user.destroy
     session[:user_id] = nil
-    redirect_to root_path, notice: 'Your account has been deleted.'
+    redirect_to root_path, notice: "Your account has been deleted."
   end
 
   private
@@ -55,14 +54,13 @@ class UsersController < ApplicationController
 
   def require_login
     unless logged_in?
-      redirect_to root_path, alert: 'You must be logged in to perform that action.'
+      redirect_to root_path, alert: "You must be logged in to perform that action."
     end
   end
 
   def require_owner
     unless current_user == @user
-      redirect_to root_path, alert: 'You can only edit your own account.'
+      redirect_to root_path, alert: "You can only edit your own account."
     end
   end
 end
-

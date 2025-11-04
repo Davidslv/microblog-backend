@@ -139,7 +139,7 @@ class BackfillCounterCaches
     puts "  Checking counters for accuracy..."
 
     mismatches = []
-    sample_size = [100, @total_users].min
+    sample_size = [ 100, @total_users ].min
 
     User.limit(sample_size).find_each do |user|
       actual_followers = user.followers.count
@@ -178,4 +178,3 @@ end
 if __FILE__ == $0
   BackfillCounterCaches.new.perform
 end
-

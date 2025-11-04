@@ -1,7 +1,7 @@
 class Post < ApplicationRecord
-  belongs_to :author, class_name: 'User', optional: true
-  belongs_to :parent, class_name: 'Post', optional: true
-  has_many :replies, class_name: 'Post', foreign_key: 'parent_id', dependent: :nullify
+  belongs_to :author, class_name: "User", optional: true
+  belongs_to :parent, class_name: "Post", optional: true
+  has_many :replies, class_name: "Post", foreign_key: "parent_id", dependent: :nullify
 
   validates :content, presence: true, length: { maximum: 200 }
 
@@ -14,7 +14,6 @@ class Post < ApplicationRecord
   end
 
   def author_name
-    author&.username || 'Deleted User'
+    author&.username || "Deleted User"
   end
 end
-
