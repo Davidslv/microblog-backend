@@ -105,13 +105,16 @@ create_user_and_db() {
     fi
   else
     if [ -n "$password" ]; then
-      psql -U "$PGUSER" -d postgres -c "CREATE USER $username WITH PASSWORD '$password';" > /dev/null 2>&1
-      echo "  ✓ Created user '$username' with password"
+      psql -U "$PGUSER" -d postgres -c "CREATE USER $username WITH PASSWORD '$password' CREATEDB;" > /dev/null 2>&1
+      echo "  ✓ Created user '$username' with password and CREATEDB privilege"
     else
-      psql -U "$PGUSER" -d postgres -c "CREATE USER $username;" > /dev/null 2>&1
-      echo "  ✓ Created user '$username' (no password)"
+      psql -U "$PGUSER" -d postgres -c "CREATE USER $username WITH CREATEDB;" > /dev/null 2>&1
+      echo "  ✓ Created user '$username' with CREATEDB privilege (no password)"
     fi
   fi
+  
+  # Ensure CREATEDB privilege (for Rails db:create/db:setup)
+  psql -U "$PGUSER" -d postgres -c "ALTER USER $username WITH CREATEDB;" > /dev/null 2>&1
 
   # Create database if it doesn't exist
   if psql -U "$PGUSER" -d postgres -lqt 2>/dev/null | cut -d \| -f 1 | grep -qw "$database"; then
