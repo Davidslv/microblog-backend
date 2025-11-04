@@ -30,27 +30,85 @@ Or via psql:
 psql -h localhost -U "$USER" -d microblog_development -c "\dx pg_stat_statements"
 ```
 
-### 3. Configure PostgreSQL (Optional)
+### 3. Configure PostgreSQL (REQUIRED)
 
-For production, you may want to configure PostgreSQL to load the extension automatically. Edit `postgresql.conf`:
+**⚠️ IMPORTANT:** `pg_stat_statements` must be loaded via `shared_preload_libraries` before it can be used. This requires PostgreSQL configuration and a restart.
+
+#### Find PostgreSQL Config File
+
+**macOS (Homebrew):**
+```bash
+# Find the config file location
+psql -h localhost -U "$USER" -d postgres -c "SHOW config_file;"
+# Usually: /opt/homebrew/var/postgresql@16/postgresql.conf
+# or: /usr/local/var/postgresql@16/postgresql.conf
+```
+
+**Linux:**
+```bash
+# Find the config file location
+psql -h localhost -U "$USER" -d postgres -c "SHOW config_file;"
+# Usually: /etc/postgresql/16/main/postgresql.conf
+```
+
+#### Edit postgresql.conf
+
+Add or modify these settings:
 
 ```ini
-# Add to shared_preload_libraries
+# Add pg_stat_statements to shared_preload_libraries
 shared_preload_libraries = 'pg_stat_statements'
 
-# Configure pg_stat_statements
-pg_stat_statements.max = 10000
-pg_stat_statements.track = all
+# Configure pg_stat_statements (optional, but recommended)
+pg_stat_statements.max = 10000          # Maximum number of statements tracked
+pg_stat_statements.track = all          # Track all statements (including utility commands)
+pg_stat_statements.track_utility = on   # Track utility commands (optional)
 ```
 
-Then restart PostgreSQL:
+**Note:** If `shared_preload_libraries` already has values, add `pg_stat_statements` to the comma-separated list:
+```ini
+shared_preload_libraries = 'existing_lib,pg_stat_statements'
+```
+
+#### Restart PostgreSQL
+
+**macOS (Homebrew):**
 ```bash
-# macOS
 brew services restart postgresql@16
-
-# Linux
-sudo systemctl restart postgresql
+# or
+brew services restart postgresql@14  # if using version 14
 ```
+
+**Linux:**
+```bash
+sudo systemctl restart postgresql
+# or
+sudo systemctl restart postgresql@16
+```
+
+#### Verify Configuration
+
+After restarting, verify the extension is loaded:
+
+```bash
+psql -h localhost -U "$USER" -d postgres -c "SHOW shared_preload_libraries;"
+# Should include: pg_stat_statements
+```
+
+Then enable the extension in your database:
+
+```bash
+rails db:migrate
+```
+
+#### Troubleshooting
+
+**Error: "pg_stat_statements must be loaded via shared_preload_libraries"**
+
+This means PostgreSQL wasn't restarted after adding to `shared_preload_libraries`. You must:
+1. Add `pg_stat_statements` to `shared_preload_libraries` in `postgresql.conf`
+2. Restart PostgreSQL
+3. Then run `rails db:migrate`
 
 ## Usage
 
@@ -131,7 +189,7 @@ You can also query `pg_stat_statements` directly:
 ```ruby
 # In Rails console
 ActiveRecord::Base.connection.execute(<<-SQL)
-  SELECT 
+  SELECT
     LEFT(query, 100) as query,
     calls,
     mean_exec_time,
@@ -149,7 +207,7 @@ psql -h localhost -U "$USER" -d microblog_development
 
 ```sql
 -- Top slow queries
-SELECT 
+SELECT
   LEFT(query, 100) as query,
   calls,
   mean_exec_time,
@@ -225,7 +283,7 @@ rake db:stats:slow_queries
 ```bash
 # Look for queries with low cache hit ratio
 psql -h localhost -U "$USER" -d microblog_development -c "
-  SELECT 
+  SELECT
     LEFT(query, 100) as query,
     calls,
     100.0 * shared_blks_hit / NULLIF(shared_blks_hit + shared_blks_read, 0) AS hit_percent
