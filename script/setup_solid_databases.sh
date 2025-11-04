@@ -9,9 +9,17 @@ set -e
 # This allows the script to use environment variables from .env
 if [ -f .env ]; then
   echo "Loading environment variables from .env file..."
-  # Use a safer method to load .env file (handles spaces and quotes)
+  # Use set -a to automatically export all variables
+  # Then source .env file, filtering out comments and empty lines
   set -a
-  source .env
+  # Source only lines that are not comments and not empty
+  while IFS= read -r line || [ -n "$line" ]; do
+    # Skip comments and empty lines
+    [[ "$line" =~ ^[[:space:]]*# ]] && continue
+    [[ -z "${line// }" ]] && continue
+    # Export the variable (treat as shell assignment)
+    eval "export $line" 2>/dev/null || true
+  done < .env
   set +a
   echo ""
 fi
