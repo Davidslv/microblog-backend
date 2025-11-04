@@ -9,10 +9,8 @@ class UsersController < ApplicationController
       @user.posts.top_level.timeline,
       per_page: 20
     )
-    # TODO: Use counter cache after backfilling is complete
-    # See script/backfill_counter_caches.rb
-    @followers_count = @user.followers.count
-    @following_count = @user.following.count
+    @followers_count = @user.followers_count
+    @following_count = @user.following_count
   end
 
   def edit
