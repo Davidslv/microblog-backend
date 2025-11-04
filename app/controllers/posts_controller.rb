@@ -17,15 +17,43 @@ class PostsController < ApplicationController
           "INNER JOIN follows ON posts.author_id = follows.followed_id AND follows.follower_id = #{user_id}"
         ).timeline.distinct
       else
+        # Cache feed posts with cursor-based key (5-minute TTL)
+        cache_key = "user_feed:#{current_user.id}:#{params[:cursor]}"
+        cached_result = Rails.cache.read(cache_key)
+        
+        if cached_result
+          @posts, @next_cursor, @has_next = cached_result
+          return # Early return for cached feed
+        end
+        
+        # Cache miss - execute query and cache result
         posts_relation = current_user.feed_posts.timeline
       end
     else
-      posts_relation = Post.top_level.timeline
+      # Cache public posts aggressively (1 minute TTL) since they change less frequently
       @filter = "all"
+      cache_key = "public_posts:#{params[:cursor]}"
+      cached_result = Rails.cache.read(cache_key)
+      
+      if cached_result
+        @posts, @next_cursor, @has_next = cached_result
+      else
+        posts_relation = Post.top_level.timeline
+        @posts, @next_cursor, @has_next = cursor_paginate(posts_relation, per_page: per_page)
+        Rails.cache.write(cache_key, [@posts, @next_cursor, @has_next], expires_in: 1.minute)
+      end
+      
+      return # Early return for cached public posts
     end
 
     # Use cursor-based pagination (efficient SQL, no OFFSET)
     @posts, @next_cursor, @has_next = cursor_paginate(posts_relation, per_page: per_page)
+    
+    # Cache the paginated result for feed queries (if not already cached)
+    if @filter == "timeline" && current_user
+      cache_key = "user_feed:#{current_user.id}:#{params[:cursor]}"
+      Rails.cache.write(cache_key, [@posts, @next_cursor, @has_next], expires_in: 5.minutes)
+    end
   end
 
   def show

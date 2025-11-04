@@ -18,7 +18,14 @@ class User < ApplicationRecord
 
     # Follow model callbacks will update counter caches automatically
     follow_record = active_follows.build(followed_id: other_user.id)
-    follow_record.save ? true : false
+    if follow_record.save
+      # Invalidate feed cache when following someone new
+      # User's feed will now include posts from the followed user
+      Rails.cache.delete_matched("user_feed:#{id}:*")
+      true
+    else
+      false
+    end
   end
 
   def unfollow(other_user)
@@ -29,6 +36,11 @@ class User < ApplicationRecord
       # Update counter caches
       decrement!(:following_count)
       other_user.decrement!(:followers_count)
+      
+      # Invalidate feed cache when unfollowing
+      # User's feed will no longer include posts from the unfollowed user
+      Rails.cache.delete_matched("user_feed:#{id}:*")
+      
       true
     else
       false
@@ -44,6 +56,7 @@ class User < ApplicationRecord
     # This is much more efficient for users with many follows (2,500+)
     # Instead of: WHERE author_id IN (?, ?, ..., 2506 times)
     # We use: JOIN follows table to get posts from followed users + own posts
+    # Note: Caching is handled at the controller level after pagination
     user_id = Post.connection.quote(id)
     Post.joins(
       "LEFT JOIN follows ON posts.author_id = follows.followed_id AND follows.follower_id = #{user_id}"

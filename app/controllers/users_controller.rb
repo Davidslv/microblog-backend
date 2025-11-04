@@ -4,11 +4,26 @@ class UsersController < ApplicationController
   before_action :require_owner, only: [ :edit, :update, :destroy ]
 
   def show
-    # Paginate user posts using cursor-based pagination
-    @posts, @next_cursor, @has_next = cursor_paginate(
-      @user.posts.top_level.timeline,
-      per_page: 20
-    )
+    # Cache user profile data (1 hour TTL for user, 5 minutes for posts)
+    # User model is cached separately from posts to allow independent invalidation
+    @user = Rails.cache.fetch("user:#{params[:id]}", expires_in: 1.hour) do
+      User.find(params[:id])
+    end
+    
+    # Cache user posts with cursor-based key
+    cache_key = "user_posts:#{params[:id]}:#{params[:cursor]}"
+    cached_posts = Rails.cache.read(cache_key)
+    
+    if cached_posts
+      @posts, @next_cursor, @has_next = cached_posts
+    else
+      @posts, @next_cursor, @has_next = cursor_paginate(
+        @user.posts.top_level.timeline,
+        per_page: 20
+      )
+      Rails.cache.write(cache_key, [@posts, @next_cursor, @has_next], expires_in: 5.minutes)
+    end
+    
     @followers_count = @user.followers_count
     @following_count = @user.following_count
   end
@@ -19,6 +34,8 @@ class UsersController < ApplicationController
 
   def update
     if @user.update(user_params)
+      # Invalidate user cache when profile is updated
+      Rails.cache.delete("user:#{@user.id}")
       redirect_to @user, notice: "Settings updated successfully!"
     else
       flash[:alert] = @user.errors.full_messages.join(", ")
@@ -29,6 +46,10 @@ class UsersController < ApplicationController
   def destroy
     # @user already set by set_user before_action
 
+    # Invalidate caches before destroying
+    Rails.cache.delete("user:#{@user.id}")
+    Rails.cache.delete_matched("user_posts:#{@user.id}:*")
+    
     # Verify password if authentication is enabled (for later)
     # For now, just delete the account
     @user.destroy
@@ -39,6 +60,8 @@ class UsersController < ApplicationController
   private
 
   def set_user
+    # Don't cache here - caching is handled in show action
+    # This allows edit/update/destroy to work with fresh data
     @user = User.find(params[:id])
   end
 
