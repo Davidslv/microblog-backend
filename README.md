@@ -165,6 +165,25 @@ brew services start postgresql@16
 brew install node
 ```
 
+### Environment Variables Setup
+
+The application uses `dotenv-rails` to load environment variables from a `.env` file in development and test environments.
+
+1. **Copy the example file:**
+   ```bash
+   cp .env.example .env
+   ```
+
+2. **Update the `.env` file** with your local database credentials:
+   ```bash
+   # Edit .env file
+   # Update DATABASE_USERNAME, DATABASE_PASSWORD, etc.
+   ```
+
+3. **For production**, set environment variables directly in your deployment platform (Heroku, AWS, etc.) - do not use `.env` files in production.
+
+See [Solid Databases Setup Guide](docs/037_SOLID_DATABASES_SETUP.md) for detailed database configuration.
+
 ### Linux Setup
 
 ```bash
@@ -203,12 +222,29 @@ bundle install
 npm install
 ```
 
-### 3. Database Setup
+### 3. Set Up Environment Variables
+
+The application uses `dotenv-rails` to load environment variables from a `.env` file.
+
+```bash
+# Copy the example file
+cp .env.example .env
+
+# Edit .env with your local database credentials
+# Update DATABASE_USERNAME, DATABASE_PASSWORD, etc. as needed
+```
+
+The `.env.example` file includes all necessary variables with sensible defaults for local development. See [Solid Databases Setup Guide](docs/037_SOLID_DATABASES_SETUP.md) for detailed configuration.
+
+### 4. Database Setup
 
 ```bash
 # Create PostgreSQL databases
 createdb microblog_development
 createdb microblog_test
+
+# Set up Solid databases (cache, queue, cable) with dedicated users
+RAILS_ENV=development ./script/setup_solid_databases.sh
 
 # Run migrations (primary database)
 rails db:migrate
@@ -218,20 +254,6 @@ rails db:seed
 ```
 
 **Note**: The application is configured for read replicas. In development, the same database is used for both primary and replica. See [Read Replicas Setup](docs/034_READ_REPLICAS_SETUP.md) for production configuration.
-
-### 4. Environment Variables
-
-Create `.env` file (if needed):
-
-```bash
-# Database credentials (optional if using defaults)
-DATABASE_USERNAME=your_username
-DATABASE_PASSWORD=your_password
-
-# Job processing (optional)
-SOLID_QUEUE_IN_PUMA=true  # Run jobs in Puma process (OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES already set in Procfile.dev)
-JOB_CONCURRENCY=1         # Number of job processes
-```
 
 ---
 

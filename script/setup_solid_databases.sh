@@ -56,11 +56,11 @@ create_user_and_db() {
   local service_name=$4
 
   echo "Setting up $service_name..."
-  
+
   # Create user if it doesn't exist
   if psql -U postgres -t -c "SELECT 1 FROM pg_user WHERE usename='$username';" | grep -q 1; then
     echo "  ✓ User '$username' already exists"
-    
+
     # Update password if provided
     if [ -n "$password" ]; then
       psql -U postgres -c "ALTER USER $username WITH PASSWORD '$password';" > /dev/null

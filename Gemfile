@@ -51,6 +51,9 @@ gem "rack-attack"
 # See: app/controllers/application_controller.rb#cursor_paginate
 
 group :development, :test do
+  # Load environment variables from .env file
+  gem "dotenv-rails"
+
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
   gem "debug", platforms: %i[ mri windows ], require: "debug/prelude"
 
