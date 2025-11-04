@@ -48,7 +48,7 @@ class UsersController < ApplicationController
 
     # Invalidate user cache (specific key, not pattern matching)
     Rails.cache.delete("user:#{@user.id}")
-    
+
     # Note: user_posts cache invalidation removed - cache will expire via TTL
     # With fan-out on write, feed entries are deleted when user is destroyed,
     # so feed queries will be correct without cache invalidation

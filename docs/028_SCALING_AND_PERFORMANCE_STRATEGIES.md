@@ -116,7 +116,7 @@ def show
   @user = Rails.cache.fetch("user:#{params[:id]}", expires_in: 1.hour) do
     User.find(params[:id])
   end
-  
+
   @posts, @next_cursor, @has_next = Rails.cache.fetch(
     "user_posts:#{params[:id]}:#{params[:cursor]}",
     expires_in: 5.minutes
@@ -126,7 +126,7 @@ def show
       per_page: 20
     )
   end
-  
+
   @followers_count = @user.followers_count
   @following_count = @user.following_count
 end
@@ -393,14 +393,14 @@ end
 Rack::Attack.throttled_response = lambda do |env|
   match_data = env['rack.attack.match_data']
   now = match_data[:epoch_time]
-  
+
   headers = {
     'Content-Type' => 'application/json',
     'X-RateLimit-Limit' => match_data[:limit].to_s,
     'X-RateLimit-Remaining' => '0',
     'X-RateLimit-Reset' => (now + (match_data[:period] - now % match_data[:period])).to_s
   }
-  
+
   [429, headers, [{ error: 'Rate limit exceeded' }.to_json]]
 end
 ```
@@ -444,11 +444,11 @@ module RateLimitable
       # Store rate limit data in cache
       key = "rate_limit:#{self.class.name}:#{action}:#{id}"
       count = Rails.cache.read(key) || 0
-      
+
       if count >= limit
         raise RateLimitExceeded, "Rate limit exceeded for #{action}"
       end
-      
+
       Rails.cache.write(key, count + 1, expires_in: period)
     end
   end
@@ -457,7 +457,7 @@ end
 # app/controllers/posts_controller.rb
 def create
   current_user.rate_limit(:create_post, limit: 10, period: 1.minute)
-  
+
   @post = Post.new(post_params)
   # ... rest of create logic
 rescue RateLimitExceeded => e
@@ -645,9 +645,9 @@ class FanOutFeedJob < ApplicationJob
 
   def perform(post)
     return unless post.parent_id.nil? # Only top-level posts
-    
+
     followers = post.author.followers
-    
+
     # Batch insert for efficiency
     feed_entries = followers.map do |follower|
       {
@@ -658,7 +658,7 @@ class FanOutFeedJob < ApplicationJob
         updated_at: post.created_at
       }
     end
-    
+
     # Bulk insert in batches of 1000
     feed_entries.each_slice(1000) do |batch|
       FeedEntry.insert_all(batch) if batch.any?
@@ -678,7 +678,7 @@ private
 def fan_out_to_followers
   # Only fan-out top-level posts (not replies)
   return if parent_id.present?
-  
+
   # Queue background job
   FanOutFeedJob.perform_later(self)
 end
@@ -716,7 +716,7 @@ end
 def follow(other_user)
   return false if self == other_user
   return false if following?(other_user)
-  
+
   if active_follows.create(followed_id: other_user.id)
     # Backfill recent posts from followed user
     BackfillFeedJob.perform_later(id, other_user.id)
@@ -752,7 +752,7 @@ class BackfillFeedJob < ApplicationJob
     posts = Post.where(author_id: followed_user_id, parent_id: nil)
                 .order(created_at: :desc)
                 .limit(50)
-    
+
     feed_entries = posts.map do |post|
       {
         user_id: user_id,
@@ -762,7 +762,7 @@ class BackfillFeedJob < ApplicationJob
         updated_at: post.created_at
       }
     end
-    
+
     FeedEntry.insert_all(feed_entries) if feed_entries.any?
   end
 end
@@ -791,7 +791,7 @@ end
 
 #### Disadvantages
 
-1. **Storage Overhead**: 
+1. **Storage Overhead**:
    - For user with 5,000 followers: 5,000 feed entries per post
    - Storage: ~1.5M posts × 2,505 avg follows × 40 bytes = ~150 GB
    - **Solution**: Partition by date, archive old entries
@@ -944,7 +944,7 @@ production:
     database: microblog_production
     host: primary_db_host
     port: 5432
-  
+
   replica:
     <<: *default
     database: microblog_production
@@ -995,7 +995,7 @@ production:
     <<: *default
     database: microblog_production
     host: primary_db_host
-  
+
   primary_replica:
     <<: *default
     database: microblog_production
@@ -1051,7 +1051,7 @@ class ApplicationRecord < ActiveRecord::Base
     connection_class = ActiveRecord::Base.connection_pool.connections.find do |conn|
       conn.config[:replica] == true
     end
-    
+
     if connection_class
       connection_class.connection
     else
@@ -1362,7 +1362,7 @@ SHOW POOLS;
 
 #### Pros
 
-1. **Connection Efficiency**: 
+1. **Connection Efficiency**:
    - Reuse connections across requests
    - Reduce connection establishment overhead
    - Handle more concurrent requests
