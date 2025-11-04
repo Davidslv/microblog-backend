@@ -40,6 +40,37 @@ development:
     password: <%= ENV.fetch("DATABASE_PASSWORD") { "" } %>
     replica: true
 
+  # Cache, queue, and cable use PostgreSQL (shared database for horizontal scaling)
+  cache:
+    adapter: postgresql
+    database: microblog_cache
+    host: <%= ENV.fetch("CACHE_DB_HOST") { ENV.fetch("DATABASE_HOST") { "localhost" } } %>
+    port: <%= ENV.fetch("CACHE_DB_PORT") { ENV.fetch("DATABASE_PORT") { 5432 } } %>
+    username: <%= ENV.fetch("CACHE_DB_USERNAME") { ENV.fetch("DATABASE_USERNAME") { ENV["USER"] } } %>
+    password: <%= ENV.fetch("CACHE_DB_PASSWORD") { ENV.fetch("DATABASE_PASSWORD") { "" } } %>
+    pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+    migrations_paths: db/cache_migrate
+
+  queue:
+    adapter: postgresql
+    database: microblog_queue
+    host: <%= ENV.fetch("QUEUE_DB_HOST") { ENV.fetch("DATABASE_HOST") { "localhost" } } %>
+    port: <%= ENV.fetch("QUEUE_DB_PORT") { ENV.fetch("DATABASE_PORT") { 5432 } } %>
+    username: <%= ENV.fetch("QUEUE_DB_USERNAME") { ENV.fetch("DATABASE_USERNAME") { ENV["USER"] } } %>
+    password: <%= ENV.fetch("QUEUE_DB_PASSWORD") { ENV.fetch("DATABASE_PASSWORD") { "" } } %>
+    pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+    migrations_paths: db/queue_migrate
+
+  cable:
+    adapter: postgresql
+    database: microblog_cable
+    host: <%= ENV.fetch("CABLE_DB_HOST") { ENV.fetch("DATABASE_HOST") { "localhost" } } %>
+    port: <%= ENV.fetch("CABLE_DB_PORT") { ENV.fetch("DATABASE_PORT") { 5432 } } %>
+    username: <%= ENV.fetch("CABLE_DB_USERNAME") { ENV.fetch("DATABASE_USERNAME") { ENV["USER"] } } %>
+    password: <%= ENV.fetch("CABLE_DB_PASSWORD") { ENV.fetch("DATABASE_PASSWORD") { "" } } %>
+    pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+    migrations_paths: db/cable_migrate
+
 # Warning: The database defined as "test" will be erased and
 # re-generated from your development database when you run "rake".
 # Do not set this db to the same as development or production.
@@ -62,6 +93,37 @@ test:
     password: <%= ENV.fetch("DATABASE_PASSWORD") { "" } %>
     replica: true
 
+  # Cache, queue, and cable use PostgreSQL (shared database for horizontal scaling)
+  cache:
+    adapter: postgresql
+    database: microblog_cache_test
+    host: <%= ENV.fetch("CACHE_DB_HOST") { ENV.fetch("DATABASE_HOST") { "localhost" } } %>
+    port: <%= ENV.fetch("CACHE_DB_PORT") { ENV.fetch("DATABASE_PORT") { 5432 } } %>
+    username: <%= ENV.fetch("CACHE_DB_USERNAME") { ENV.fetch("DATABASE_USERNAME") { ENV["USER"] } } %>
+    password: <%= ENV.fetch("CACHE_DB_PASSWORD") { ENV.fetch("DATABASE_PASSWORD") { "" } } %>
+    pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+    migrations_paths: db/cache_migrate
+
+  queue:
+    adapter: postgresql
+    database: microblog_queue_test
+    host: <%= ENV.fetch("QUEUE_DB_HOST") { ENV.fetch("DATABASE_HOST") { "localhost" } } %>
+    port: <%= ENV.fetch("QUEUE_DB_PORT") { ENV.fetch("DATABASE_PORT") { 5432 } } %>
+    username: <%= ENV.fetch("QUEUE_DB_USERNAME") { ENV.fetch("DATABASE_USERNAME") { ENV["USER"] } } %>
+    password: <%= ENV.fetch("QUEUE_DB_PASSWORD") { ENV.fetch("DATABASE_PASSWORD") { "" } } %>
+    pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+    migrations_paths: db/queue_migrate
+
+  cable:
+    adapter: postgresql
+    database: microblog_cable_test
+    host: <%= ENV.fetch("CABLE_DB_HOST") { ENV.fetch("DATABASE_HOST") { "localhost" } } %>
+    port: <%= ENV.fetch("CABLE_DB_PORT") { ENV.fetch("DATABASE_PORT") { 5432 } } %>
+    username: <%= ENV.fetch("CABLE_DB_USERNAME") { ENV.fetch("DATABASE_USERNAME") { ENV["USER"] } } %>
+    password: <%= ENV.fetch("CABLE_DB_PASSWORD") { ENV.fetch("DATABASE_PASSWORD") { "" } } %>
+    pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+    migrations_paths: db/cable_migrate
+
 # Store production database in the storage/ directory, which by default
 # is mounted as a persistent Docker volume in config/deploy.yml.
 production:
@@ -83,22 +145,35 @@ production:
     host: <%= ENV.fetch("REPLICA_HOST") { ENV.fetch("DATABASE_HOST") { "localhost" } } %>
     port: <%= ENV.fetch("REPLICA_PORT") { ENV.fetch("DATABASE_PORT") { 5432 } } %>
     replica: true
-  # Cache, queue, and cable use SQLite (lightweight, sufficient for these use cases)
+
+  # Cache, queue, and cable use PostgreSQL (required for horizontal scaling)
+  # SQLite files cannot be shared across multiple servers
   cache:
-    adapter: sqlite3
+    adapter: postgresql
+    database: microblog_cache
+    host: <%= ENV.fetch("CACHE_DB_HOST") { ENV.fetch("DATABASE_HOST") { "localhost" } } %>
+    port: <%= ENV.fetch("CACHE_DB_PORT") { ENV.fetch("DATABASE_PORT") { 5432 } } %>
+    username: <%= ENV.fetch("CACHE_DB_USERNAME") { ENV.fetch("DATABASE_USERNAME") { "microblog" } } %>
+    password: <%= ENV.fetch("CACHE_DB_PASSWORD") { ENV.fetch("DATABASE_PASSWORD") { "" } } %>
     pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
-    timeout: 5000
-    database: storage/production_cache.sqlite3
     migrations_paths: db/cache_migrate
+
   queue:
-    adapter: sqlite3
+    adapter: postgresql
+    database: microblog_queue
+    host: <%= ENV.fetch("QUEUE_DB_HOST") { ENV.fetch("DATABASE_HOST") { "localhost" } } %>
+    port: <%= ENV.fetch("QUEUE_DB_PORT") { ENV.fetch("DATABASE_PORT") { 5432 } } %>
+    username: <%= ENV.fetch("QUEUE_DB_USERNAME") { ENV.fetch("DATABASE_USERNAME") { "microblog" } } %>
+    password: <%= ENV.fetch("QUEUE_DB_PASSWORD") { ENV.fetch("DATABASE_PASSWORD") { "" } } %>
     pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
-    timeout: 5000
-    database: storage/production_queue.sqlite3
     migrations_paths: db/queue_migrate
+
   cable:
-    adapter: sqlite3
+    adapter: postgresql
+    database: microblog_cable
+    host: <%= ENV.fetch("CABLE_DB_HOST") { ENV.fetch("DATABASE_HOST") { "localhost" } } %>
+    port: <%= ENV.fetch("CABLE_DB_PORT") { ENV.fetch("DATABASE_PORT") { 5432 } } %>
+    username: <%= ENV.fetch("CABLE_DB_USERNAME") { ENV.fetch("DATABASE_USERNAME") { "microblog" } } %>
+    password: <%= ENV.fetch("CABLE_DB_PASSWORD") { ENV.fetch("DATABASE_PASSWORD") { "" } } %>
     pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
-    timeout: 5000
-    database: storage/production_cable.sqlite3
     migrations_paths: db/cable_migrate
