@@ -6,8 +6,8 @@ Rails.application.configure do
   # Make code changes take effect immediately without server restart.
   config.enable_reloading = true
 
-  # Do not eager load code on boot.
-  config.eager_load = false
+  # Eager load code on boot for Solid Queue workers
+  config.eager_load = ENV["RAILS_ENV"] == "production" || ENV["SOLID_QUEUE_WORKER"] == "true"
 
   # Show full error reports.
   config.consider_all_requests_local = true
