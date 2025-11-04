@@ -10,6 +10,8 @@ Solid Queue is configured as the background job processor for this application, 
 
 Solid Queue is configured to run in development using the Puma plugin:
 
+> macOS fork safety warning (fixed with OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES)
+
 ```bash
 SOLID_QUEUE_IN_PUMA=true OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES rails s
 ```
@@ -102,8 +104,8 @@ rails runner "
 
 ```ruby
 rails runner "
-  SolidQueue::Process.all.each { |p| 
-    puts \"#{p.kind}: #{p.name} (pid=#{p.pid}, last_heartbeat=#{p.last_heartbeat_at})\" 
+  SolidQueue::Process.all.each { |p|
+    puts \"#{p.kind}: #{p.name} (pid=#{p.pid}, last_heartbeat=#{p.last_heartbeat_at})\"
   }
 "
 ```
