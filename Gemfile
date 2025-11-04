@@ -64,6 +64,9 @@ end
 group :development do
   # Use console on exceptions pages [https://github.com/rails/web-console]
   gem "web-console"
+  
+  # Mission Control – Jobs: UI for monitoring Solid Queue jobs
+  gem "mission_control-jobs"
 end
 
 group :test do

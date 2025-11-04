@@ -27,6 +27,10 @@ Rails.application.routes.draw do
 
   # Monitoring endpoints (development only)
   if Rails.env.development?
+    # Mission Control – Jobs: UI for monitoring Solid Queue jobs
+    # Access at: http://localhost:3000/jobs
+    mount MissionControl::Jobs::Engine, at: "/jobs"
+
     get "/puma/stats" => proc { |env|
       require "json"
       stats = Puma.stats
