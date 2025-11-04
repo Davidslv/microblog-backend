@@ -142,8 +142,25 @@ Response (JSON/HTML)
 
 ## Prerequisites
 
-Before you begin, ensure you have the following installed:
+You can run the application in two ways:
 
+### Option 1: Docker (Recommended for Newcomers)
+
+**Docker Setup** (easiest - no local dependencies needed):
+- **Docker Desktop** (macOS/Windows) or **Docker Engine** (Linux)
+- **Docker Compose** (usually included with Docker Desktop)
+
+**Benefits:**
+- ✅ No need to install Ruby, PostgreSQL, or Node.js locally
+- ✅ Consistent environment across all developers
+- ✅ Easy to scale with multiple instances
+- ✅ Production-like setup
+
+See [Docker Workflow Guide](docs/039_DOCKER_WORKFLOW.md) for detailed instructions.
+
+### Option 2: Local Development
+
+**Local Setup** (requires local dependencies):
 - **Ruby** 3.x (check with `ruby --version`)
 - **PostgreSQL** 14+ (check with `psql --version`)
 - **Node.js** 18+ (for Tailwind CSS, check with `node --version`)
@@ -212,6 +229,65 @@ git clone <repository-url>
 cd microblog
 ```
 
+### Choose Your Installation Method
+
+---
+
+## 🐳 Docker Installation (Recommended)
+
+**Best for:** Newcomers, consistent environments, easy scaling
+
+### Quick Start with Docker
+
+```bash
+# 1. Start all services (database, web server, load balancer)
+docker compose up -d
+
+# 2. Run database migrations (one-time setup)
+docker compose run --rm migrate
+
+# 3. Access the application
+# Main app: http://localhost (via Traefik load balancer)
+# Direct: http://localhost:3000
+# Traefik dashboard: http://localhost:8080
+```
+
+### Running Scripts in Docker
+
+```bash
+# Run a script (e.g., load test seeding)
+docker compose exec web-1 bin/rails runner script/load_test_seed.rb
+
+# Get interactive shell
+docker compose exec web-1 bash
+
+# Rails console
+docker compose exec web-1 bin/rails console
+
+# Run migrations
+docker compose exec web-1 bin/rails db:migrate
+```
+
+### Scaling with Docker
+
+```bash
+# Run multiple web instances (for load testing)
+docker compose up -d --scale web=3
+
+# Check status
+docker compose ps
+```
+
+**📚 Need more Docker help?** See:
+- [Docker Workflow Guide](docs/039_DOCKER_WORKFLOW.md) - Complete Docker guide
+- [Docker Compose Configuration](docs/038_DOCKER_COMPOSE_CONFIGURATION.md) - Configuration details
+
+---
+
+## 💻 Local Installation
+
+**Best for:** Developers who prefer local development, faster iteration
+
 ### 2. Install Dependencies
 
 ```bash
@@ -259,7 +335,54 @@ rails db:seed
 
 ## Running the Application
 
-### Development Mode
+### 🐳 Docker (Recommended)
+
+**Start all services:**
+
+```bash
+# Start database, web server, and load balancer
+docker compose up -d
+
+# View logs
+docker compose logs -f web
+
+# Access application
+# Main: http://localhost (via Traefik)
+# Direct: http://localhost:3000
+```
+
+**Common Docker commands:**
+
+```bash
+# Stop services
+docker compose down
+
+# Restart services
+docker compose restart
+
+# Scale to multiple instances
+docker compose up -d --scale web=3
+
+# View status
+docker compose ps
+```
+
+**Running scripts in Docker:**
+
+```bash
+# Run a script
+docker compose exec web-1 bin/rails runner script/load_test_seed.rb
+
+# Rails console
+docker compose exec web-1 bin/rails console
+
+# Interactive shell
+docker compose exec web-1 bash
+```
+
+See [Docker Workflow Guide](docs/039_DOCKER_WORKFLOW.md) for complete Docker instructions.
+
+### 💻 Local Development
 
 **Start the server and Tailwind CSS watcher:**
 
@@ -312,6 +435,13 @@ user1.follow(user2)
 
 For development, use the temporary login route:
 
+**With Docker:**
+```bash
+# Visit: http://localhost/dev/login/:user_id
+# Example: http://localhost/dev/login/1
+```
+
+**With Local Development:**
 ```bash
 # Visit: http://localhost:3000/dev/login/:user_id
 # Example: http://localhost:3000/dev/login/1
@@ -382,6 +512,8 @@ All documentation is located in the `docs/` directory, organized chronologically
 
 ### Quick Start Guide
 - [Development Guide](docs/002_DEVELOPMENT.md) - Setup and development workflow
+- [Docker Workflow Guide](docs/039_DOCKER_WORKFLOW.md) - **NEW** Complete Docker guide for newcomers
+- [Docker Compose Configuration](docs/038_DOCKER_COMPOSE_CONFIGURATION.md) - Docker setup details
 - [Database Diagram](docs/001_DATABASE_DIAGRAM.md) - Schema and relationships
 
 ### Performance & Optimization
@@ -534,6 +666,24 @@ See [Monitoring Guide](docs/006_MONITORING_GUIDE.md) for details.
 
 ### Database Connection Issues
 
+**With Docker:**
+
+```bash
+# Check database container is running
+docker compose ps db
+
+# Check database logs
+docker compose logs db
+
+# Test connection from web container
+docker compose exec web-1 bin/rails runner "ActiveRecord::Base.connection.execute('SELECT 1')"
+
+# Connect to database
+docker compose exec db psql -U postgres -d microblog_development
+```
+
+**With Local Development:**
+
 ```bash
 # Check PostgreSQL is running
 brew services list  # macOS
@@ -542,6 +692,8 @@ sudo systemctl status postgresql  # Linux
 # Test connection
 psql -h localhost -U $USER -d microblog_development
 ```
+
+See [Docker Compose Configuration](docs/038_DOCKER_COMPOSE_CONFIGURATION.md) for Docker-specific troubleshooting.
 
 ### Asset Compilation Issues
 
@@ -554,6 +706,19 @@ bin/rails tailwindcss:build
 ```
 
 ### Background Jobs Not Running
+
+**With Docker:**
+
+```bash
+# Jobs run automatically if SOLID_QUEUE_IN_PUMA=true (default)
+# Check logs
+docker compose logs web | grep -i "solid"
+
+# Or run jobs in separate container (if configured)
+docker compose up jobs
+```
+
+**With Local Development:**
 
 ```bash
 # Check if job processor is running
