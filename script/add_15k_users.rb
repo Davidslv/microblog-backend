@@ -43,7 +43,7 @@ max_existing_id = User.maximum(:id) || 0
   
   # Generate user data
   users_data = []
-  batch.times do |i|
+  batch_size.times do |i|
     global_index = users_created + i
     username = "bulk_user_#{global_index}_#{SecureRandom.hex(4)}"
     
