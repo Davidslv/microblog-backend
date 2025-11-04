@@ -655,3 +655,128 @@ upstream microblog_app {
     server app3:3000;
 }
 ```
+
+## Health Checks
+
+Rails provides a built-in health check endpoint at `/up`. Configure your load balancer to use it:
+
+### nginx
+
+```nginx
+location /up {
+    proxy_pass http://microblog_app;
+    access_log off;
+}
+```
+
+### HAProxy
+
+```haproxy
+option httpchk GET /up
+```
+
+### Health Check Behavior
+
+The `/up` endpoint checks:
+- Database connectivity
+- Application boot status
+
+If health check fails, the load balancer should remove the instance from rotation.
+
+## Monitoring Considerations
+
+When running multiple instances, consider:
+
+1. **Application Logs**: Aggregate logs from all instances (use centralized logging like ELK, Splunk, or CloudWatch)
+2. **Metrics**: Monitor each instance separately (CPU, memory, request rate)
+3. **Database Connections**: Monitor total connections across all instances
+4. **Cache Hit Rate**: Monitor Solid Cache performance
+5. **Job Queue Depth**: Monitor Solid Queue job processing
+
+### Recommended Tools
+
+- **Application Performance Monitoring**: New Relic, Datadog, Scout
+- **Log Aggregation**: ELK Stack, Splunk, Papertrail
+- **Metrics**: Prometheus + Grafana
+- **Uptime Monitoring**: Pingdom, UptimeRobot
+
+## Troubleshooting
+
+### Issue: Sessions Not Working Across Instances
+
+**Symptom**: Users get logged out when requests hit different instances
+
+**Solution**: This shouldn't happen with cookie-based sessions. Check:
+- Session secret key is the same on all instances (`SECRET_KEY_BASE`)
+- Cookies are being set correctly (check `config.action_dispatch.cookies`)
+- Load balancer is not stripping cookies
+
+### Issue: Cache Inconsistency
+
+**Symptom**: Different instances see different cached data
+
+**Solution**: 
+- Ensure all instances use the same cache database
+- For SQLite, switch to PostgreSQL in production
+- Check cache database connection settings
+
+### Issue: Jobs Not Processing
+
+**Symptom**: Background jobs are enqueued but not processed
+
+**Solution**:
+- Check if workers are running (`SOLID_QUEUE_IN_PUMA=true` or `bin/jobs`)
+- Verify all instances connect to the same queue database
+- Check worker logs for errors
+
+### Issue: Rate Limiting Not Working
+
+**Symptom**: Rate limits are per-instance, not global
+
+**Solution**:
+- Verify `Rack::Attack.cache.store = Rails.cache` is set
+- Ensure all instances use the same cache database
+- Check cache connection is working
+
+### Issue: Database Connection Pool Exhaustion
+
+**Symptom**: `ActiveRecord::ConnectionTimeoutError`
+
+**Solution**:
+- Increase `pool` size in `database.yml` (but be careful - total connections = pool_size × instances)
+- Monitor total database connections: `SELECT count(*) FROM pg_stat_activity;`
+- Consider using PgBouncer for connection pooling (not currently configured)
+
+### Issue: Read Replica Lag
+
+**Symptom**: Users see stale data after writes
+
+**Solution**:
+- Check replication lag: `SELECT * FROM pg_stat_replication;`
+- Increase `database_selector.delay` in `config/application.rb` if needed
+- Monitor replica lag metrics
+
+## Summary
+
+This application is mostly ready for horizontal scaling, but requires one critical configuration change:
+
+✅ **Shared Database**: PostgreSQL primary and read replicas already configured
+✅ **Stateless Sessions**: Cookie-based sessions work across instances
+✅ **Shared Rate Limiting**: Rack::Attack uses shared cache (will work once cache DB is shared)
+⚠️ **Cache & Queue**: Currently use SQLite - **must switch to PostgreSQL** for horizontal scaling
+✅ **Read Replicas**: Already configured for read scaling
+
+**To scale horizontally**:
+1. **CRITICAL**: Switch cache and queue from SQLite to PostgreSQL (see [Shared State Requirements](#shared-state-requirements))
+2. Deploy to multiple servers
+3. Configure a load balancer (nginx, HAProxy, or cloud LB)
+4. Ensure all instances use the same database configuration
+5. Monitor and adjust as needed
+
+**Next Steps**:
+1. Update `database.yml` to use PostgreSQL for cache and queue in production
+2. Run migrations on the new PostgreSQL databases
+3. Set up load balancer in staging first
+4. Test with 2-3 instances
+5. Monitor performance and adjust
+6. Scale to production gradually
