@@ -4,7 +4,7 @@ services:
     image: postgres:16
     environment:
       POSTGRES_USER: ${DATABASE_USERNAME:-postgres}
-      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-postgres}
       POSTGRES_DB: microblog_development
     ports:
       - "5432:5432"
@@ -15,20 +15,26 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - microblog-network
 
   # Application instances (scale with: docker compose up --scale web=3)
   web:
     build:
       context: .
       dockerfile: Dockerfile
-    command: bin/rails server -b 0.0.0.0 -p 3000
+    command: sh -c "rm -f /rails/tmp/pids/server*.pid && bin/rails server -b 0.0.0.0 -p 3000"
     environment:
       RAILS_ENV: development
-      DATABASE_URL: postgresql://${DATABASE_USERNAME:-postgres}:${DATABASE_PASSWORD:-}@db:5432/microblog_development
+      # Use db service name (Docker Compose DNS) instead of localhost
+      DATABASE_URL: postgresql://${DATABASE_USERNAME:-postgres}:${DATABASE_PASSWORD:-postgres}@db:5432/microblog_development
       DATABASE_HOST: db
       DATABASE_PORT: 5432
       DATABASE_USERNAME: ${DATABASE_USERNAME:-postgres}
-      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-postgres}
+      # Replica configuration (in Docker, same as primary since we're not using real replicas)
+      REPLICA_HOST: db
+      REPLICA_PORT: 5432
       # Cache, queue, and cable use same PostgreSQL instance for horizontal scaling
       # Each uses dedicated credentials for security
       CACHE_DB_HOST: db
@@ -46,8 +52,7 @@ services:
       # Enable Solid Queue workers in Puma (recommended for horizontal scaling)
       SOLID_QUEUE_IN_PUMA: "true"
       # Rails master key (required for production mode)
-      RAILS_MASTER_KEY: ${RAILS_MASTER_KEY:-}
-      SECRET_KEY_BASE: ${SECRET_KEY_BASE:-}
+      # SECRET_KEY_BASE is auto-generated in development if not set
     ports:
       - "3000-3009:3000"  # Range for multiple instances
     depends_on:
@@ -55,6 +60,8 @@ services:
         condition: service_healthy
     volumes:
       - .:/rails
+    networks:
+      - microblog-network
     healthcheck:
       # curl is available in the Dockerfile base image
       test: ["CMD-SHELL", "curl -f http://localhost:3000/up || exit 1"]
@@ -88,11 +95,14 @@ services:
       "
     environment:
       RAILS_ENV: development
-      DATABASE_URL: postgresql://${DATABASE_USERNAME:-postgres}:${DATABASE_PASSWORD:-}@db:5432/microblog_development
+      DATABASE_URL: postgresql://${DATABASE_USERNAME:-postgres}:${DATABASE_PASSWORD:-postgres}@db:5432/microblog_development
       DATABASE_HOST: db
       DATABASE_PORT: 5432
       DATABASE_USERNAME: ${DATABASE_USERNAME:-postgres}
-      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-postgres}
+      # Replica configuration (in Docker, same as primary)
+      REPLICA_HOST: db
+      REPLICA_PORT: 5432
       CACHE_DB_HOST: db
       CACHE_DB_PORT: 5432
       CACHE_DB_USERNAME: ${CACHE_DB_USERNAME:-microblog_cache}
@@ -112,6 +122,8 @@ services:
         condition: service_healthy
     volumes:
       - .:/rails
+    networks:
+      - microblog-network
     profiles:
       - tools
 
@@ -131,9 +143,15 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     depends_on:
       - web
+    networks:
+      - microblog-network
     labels:
       - "traefik.enable=true"
 
 volumes:
   pg_data:
+
+networks:
+  microblog-network:
+    driver: bridge
 
