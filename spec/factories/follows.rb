@@ -4,3 +4,4 @@ FactoryBot.define do
     association :followed, factory: :user
   end
 end
+

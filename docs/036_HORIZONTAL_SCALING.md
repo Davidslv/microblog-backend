@@ -144,7 +144,7 @@ production:
 3. Update `database.yml` as shown above
 4. Restart all application instances
 
-**Worker Configuration**: 
+**Worker Configuration**:
 - Option 1: Run workers in each app instance (via Puma plugin with `SOLID_QUEUE_IN_PUMA=true`)
 - Option 2: Run dedicated worker processes (via `bin/jobs` on separate servers)
 
@@ -243,7 +243,7 @@ upstream app {
 
 server {
     listen 80;
-    
+
     location / {
         proxy_pass http://app;
         proxy_set_header Host $host;
@@ -293,7 +293,7 @@ upstream microblog {
 server {
     listen 8080;
     server_name localhost;
-    
+
     location / {
         proxy_pass http://microblog;
         proxy_set_header Host $host;
@@ -423,12 +423,12 @@ SOLID_QUEUE_IN_PUMA=true
 upstream microblog_app {
     # Least connections balancing
     least_conn;
-    
+
     # Application servers
     server app1.example.com:3000 max_fails=3 fail_timeout=30s;
     server app2.example.com:3000 max_fails=3 fail_timeout=30s;
     server app3.example.com:3000 max_fails=3 fail_timeout=30s;
-    
+
     # Enable keepalive connections
     keepalive 32;
 }
@@ -473,7 +473,7 @@ server {
     location / {
         proxy_pass http://microblog_app;
         proxy_http_version 1.1;
-        
+
         # Headers
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -481,16 +481,16 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_set_header X-Forwarded-Host $host;
         proxy_set_header X-Forwarded-Port $server_port;
-        
+
         # Connection settings
         proxy_set_header Connection "";
         proxy_buffering off;
-        
+
         # Timeouts
         proxy_connect_timeout 60s;
         proxy_send_timeout 60s;
         proxy_read_timeout 60s;
-        
+
         # Disable buffering for streaming responses
         proxy_buffering off;
     }
@@ -547,7 +547,7 @@ frontend https_front
 backend microblog_backend
     balance leastconn
     option httpchk GET /up
-    
+
     server app1 app1.example.com:3000 check inter 5s fall 3 rise 2
     server app2 app2.example.com:3000 check inter 5s fall 3 rise 2
     server app3 app3.example.com:3000 check inter 5s fall 3 rise 2
@@ -715,7 +715,7 @@ When running multiple instances, consider:
 
 **Symptom**: Different instances see different cached data
 
-**Solution**: 
+**Solution**:
 - Ensure all instances use the same cache database
 - For SQLite, switch to PostgreSQL in production
 - Check cache database connection settings

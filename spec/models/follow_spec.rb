@@ -64,3 +64,4 @@ RSpec.describe Follow, type: :model do
     end
   end
 end
+
