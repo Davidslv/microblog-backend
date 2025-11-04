@@ -1,7 +1,7 @@
 class User < ApplicationRecord
   has_secure_password
 
-  has_many :posts, foreign_key: "author_id", dependent: :nullify, counter_cache: :posts_count
+  has_many :posts, foreign_key: "author_id", dependent: :nullify
   # Follow associations don't use counter_cache (we manage counters manually via Follow callbacks)
   has_many :active_follows, class_name: "Follow", foreign_key: "follower_id", dependent: :delete_all, counter_cache: false
   has_many :passive_follows, class_name: "Follow", foreign_key: "followed_id", dependent: :delete_all, counter_cache: false
