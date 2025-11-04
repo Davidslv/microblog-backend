@@ -44,12 +44,25 @@ The script will:
 
 If you prefer to set up manually:
 
-#### Step 1: Create PostgreSQL Users
+#### Step 1: Connect to PostgreSQL
+
+**Note**: On macOS with Homebrew PostgreSQL, the superuser is usually your system username. On Linux, it's usually `postgres`.
 
 ```bash
-# Connect to PostgreSQL
+# Try with postgres first (Linux)
 psql -U postgres
+
+# Or use your system username (macOS with Homebrew)
+psql -U $(whoami)
+
+# Or set PGUSER environment variable
+export PGUSER=your_username
+psql
 ```
+
+#### Step 2: Create PostgreSQL Users
+
+Once connected:
 
 ```sql
 -- Create cache user
@@ -62,7 +75,7 @@ CREATE USER microblog_queue WITH PASSWORD 'your_queue_password';
 CREATE USER microblog_cable WITH PASSWORD 'your_cable_password';
 ```
 
-#### Step 2: Create Databases
+#### Step 3: Create Databases
 
 ```sql
 -- Create cache database
@@ -75,7 +88,7 @@ CREATE DATABASE microblog_queue OWNER microblog_queue;
 CREATE DATABASE microblog_cable OWNER microblog_cable;
 ```
 
-#### Step 3: Grant Permissions
+#### Step 4: Grant Permissions
 
 ```sql
 -- Grant all privileges on cache database
@@ -88,7 +101,7 @@ GRANT ALL PRIVILEGES ON DATABASE microblog_queue TO microblog_queue;
 GRANT ALL PRIVILEGES ON DATABASE microblog_cable TO microblog_cable;
 ```
 
-#### Step 4: Run Rails Install Commands
+#### Step 5: Run Rails Install Commands
 
 ```bash
 # Set environment variables
