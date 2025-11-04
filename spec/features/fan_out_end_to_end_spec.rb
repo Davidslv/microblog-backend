@@ -244,6 +244,10 @@ RSpec.describe 'Fan-Out on Write End-to-End', type: :feature do
     end
 
     it 'handles large follower counts efficiently' do
+      # Clear existing followers and feed entries for this test
+      Follow.where(followed_id: author.id).delete_all
+      FeedEntry.delete_all
+      
       # Create many followers (simulate a popular user)
       # Use factory which handles username uniqueness automatically
       many_followers = create_list(:user, 20)
@@ -251,9 +255,6 @@ RSpec.describe 'Fan-Out on Write End-to-End', type: :feature do
         follower.follow(author)
       end
       perform_enqueued_jobs
-      
-      # Clear existing feed entries
-      FeedEntry.delete_all
       
       # Author creates a post
       login_as(author)
@@ -267,17 +268,18 @@ RSpec.describe 'Fan-Out on Write End-to-End', type: :feature do
       perform_enqueued_jobs
       
       post = Post.find_by(content: post_content)
+      expect(post).to be_present, "Post should be created"
       
-      # Should have feed entries for all followers
+      # Should have feed entries for all 20 followers
       feed_entries = FeedEntry.where(post_id: post.id)
-      expect(feed_entries.count).to eq(20), "Should have feed entries for all 20 followers, got #{feed_entries.count}"
+      expect(feed_entries.count).to eq(20), "Should have feed entries for all 20 followers, got #{feed_entries.count}. Post ID: #{post.id}"
       
       # Verify a few followers can see the post
       many_followers.first(3).each do |follower|
         logout
         login_as(follower)
         visit root_path
-        expect(page).to have_content(post_content)
+        expect(page).to have_content(post_content), "Follower #{follower.username} should see the post"
       end
     end
 
