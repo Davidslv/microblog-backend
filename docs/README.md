@@ -86,11 +86,12 @@ For a comprehensive understanding, read documents in this order:
 
 The most recent documents added (in reverse chronological order):
 
-1. **045_EDUCATIONAL_CASE_STUDY.md** - Complete educational case study for junior engineers (Nov 4)
-2. **044_MODERATION_DOCUMENTS_COMPARISON.md** - Comparison of moderation system proposals
-3. **043_MODERATION_IDEOLOGY.md** - Strategic moderation approach
-4. **042_MODERATION_SYSTEM_PROPOSAL.md** - Technical moderation implementation proposal
-5. **041_ADMIN_DASHBOARD_ARCHITECTURE_PROPOSAL.md** - Admin dashboard architecture options
+1. **046_SDLC_DEVELOPER_CHECKLIST.md** - ⭐ NEW Comprehensive SDLC developer checklist with codebase analysis
+2. **045_EDUCATIONAL_CASE_STUDY.md** - Complete educational case study for junior engineers (Nov 4)
+3. **044_MODERATION_DOCUMENTS_COMPARISON.md** - Comparison of moderation system proposals
+4. **043_MODERATION_IDEOLOGY.md** - Strategic moderation approach
+5. **042_MODERATION_SYSTEM_PROPOSAL.md** - Technical moderation implementation proposal
+6. **041_ADMIN_DASHBOARD_ARCHITECTURE_PROPOSAL.md** - Admin dashboard architecture options
 
 ## 📝 Document Naming Convention
 
@@ -120,4 +121,5 @@ This allows you to:
 - **Architecture?** → `021_ARCHITECTURE_AND_FEED_PROPOSALS.md`
 - **Admin dashboard?** → `041_ADMIN_DASHBOARD_ARCHITECTURE_PROPOSAL.md`
 - **Moderation system?** → `042_MODERATION_SYSTEM_PROPOSAL.md` and `043_MODERATION_IDEOLOGY.md`
+- **SDLC concepts & best practices?** → `046_SDLC_DEVELOPER_CHECKLIST.md` - Comprehensive checklist for software engineers
 
