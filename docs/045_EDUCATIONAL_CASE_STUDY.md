@@ -273,8 +273,8 @@ SELECT * FROM posts WHERE author_id = 123;
 **Example: Finding user's posts, ordered by date**
 ```sql
 -- Without composite index
-SELECT * FROM posts 
-WHERE author_id = 123 
+SELECT * FROM posts
+WHERE author_id = 123
 ORDER BY created_at DESC;
 -- Database: Filter by author_id, then sort (slow)
 ```
@@ -282,7 +282,7 @@ ORDER BY created_at DESC;
 **Solution: Composite Index**
 ```sql
 -- Index on (author_id, created_at DESC)
-CREATE INDEX idx_posts_author_created 
+CREATE INDEX idx_posts_author_created
 ON posts(author_id, created_at DESC);
 
 -- Now database can:
@@ -294,7 +294,7 @@ ON posts(author_id, created_at DESC);
 **Composite Indexes in This Codebase:**
 ```ruby
 # Posts table
-add_index :posts, [:author_id, :created_at], 
+add_index :posts, [:author_id, :created_at],
           order: { created_at: :desc }
 # Used for: User's posts, ordered newest first
 
@@ -325,7 +325,7 @@ add_index :follows, [:follower_id, :followed_id], unique: true
 def feed_posts
   # Get all users I follow
   followed_ids = following.pluck(:id)
-  
+
   # Get their posts
   Post.where(author_id: followed_ids)
       .or(Post.where(author_id: id))  # Include my own posts
@@ -400,11 +400,11 @@ add_index :users, :followers_count  # For sorting by popularity
 class Follow < ApplicationRecord
   belongs_to :follower, class_name: "User", counter_cache: :following_count
   belongs_to :followed, class_name: "User", counter_cache: :followers_count
-  
+
   # When Follow is created:
   # - followed.followers_count automatically increments
   # - follower.following_count automatically increments
-  
+
   # When Follow is deleted:
   # - Counters automatically decrement
 end
@@ -463,7 +463,7 @@ Post.where("id < ?", last_post_id)
 # app/controllers/application_controller.rb
 def cursor_paginate(relation, per_page: 20, cursor: nil, order: :desc)
   cursor_id = cursor || params[:cursor]&.to_i
-  
+
   if cursor_id.present?
     if order == :asc
       relation = relation.where("id > ?", cursor_id)
@@ -471,12 +471,12 @@ def cursor_paginate(relation, per_page: 20, cursor: nil, order: :desc)
       relation = relation.where("id < ?", cursor_id)
     end
   end
-  
+
   posts = relation.limit(per_page + 1).to_a
   has_next = posts.length > per_page
   posts = posts.take(per_page) if has_next
   next_cursor = posts.last&.id
-  
+
   [posts, next_cursor, has_next]
 end
 ```
@@ -547,7 +547,7 @@ create_table :feed_entries do |t|
 end
 
 # Critical indexes
-add_index :feed_entries, [:user_id, :created_at], 
+add_index :feed_entries, [:user_id, :created_at],
           order: { created_at: :desc }
 add_index :feed_entries, [:user_id, :post_id], unique: true
 ```
@@ -559,10 +559,10 @@ class FanOutFeedJob < ApplicationJob
   def perform(post_id)
     post = Post.find(post_id)
     author = post.author
-    
+
     # Get all followers
     follower_ids = author.followers.pluck(:id)
-    
+
     # Create feed entries for each follower
     follower_ids.each do |follower_id|
       FeedEntry.create!(
@@ -583,7 +583,7 @@ after_create :fan_out_to_followers
 def fan_out_to_followers
   return if parent_id.present?  # Don't fan-out replies
   return unless author_id.present?
-  
+
   FanOutFeedJob.perform_later(id)
 end
 ```
@@ -635,18 +635,18 @@ def index
   if current_user
     cache_key = "user_feed:#{current_user.id}:#{params[:cursor]}"
     cached_result = Rails.cache.read(cache_key)
-    
+
     if cached_result
       @posts, @next_cursor, @has_next = cached_result
       return  # Cache hit - return immediately
     end
-    
+
     # Cache miss - execute query
     posts_relation = current_user.feed_posts.timeline
     @posts, @next_cursor, @has_next = cursor_paginate(posts_relation)
-    
+
     # Cache result
-    Rails.cache.write(cache_key, [@posts, @next_cursor, @has_next], 
+    Rails.cache.write(cache_key, [@posts, @next_cursor, @has_next],
                       expires_in: 5.minutes)
   end
 end
@@ -851,19 +851,19 @@ session[:user_id] = nil
 class Rack::Attack
   # Use Solid Cache as storage
   Rack::Attack.cache.store = Rails.cache
-  
+
   # General rate limit: 300 requests per 5 minutes per IP
   throttle("req/ip", limit: 300, period: 5.minutes) do |req|
     req.ip
   end
-  
+
   # Post creation: 10 posts per minute per user
   throttle("posts/create", limit: 10, period: 1.minute) do |req|
     if req.path == "/posts" && req.post?
       req.session["user_id"] || req.ip
     end
   end
-  
+
   # Feed requests: 100 requests per minute per user
   throttle("feed/requests", limit: 100, period: 1.minute) do |req|
     if (req.path == "/posts" || req.path == "/") && req.get?
@@ -905,7 +905,7 @@ Retry-After: 60
        /  \      E2E Tests (Few)
       /____\     - Feature specs
      /      \    - User journeys
-    /        \   
+    /        \
    /__________\  Integration Tests (Some)
   /            \ - Request specs
  /              \ - Controller specs
@@ -932,19 +932,19 @@ RSpec.describe User do
       expect(user).not_to be_valid
       expect(user.errors[:username]).to include("can't be blank")
     end
-    
+
     it "requires unique username" do
       create(:user, username: "alice")
       user = User.new(username: "alice")
       expect(user).not_to be_valid
     end
   end
-  
+
   describe "#follow" do
     it "creates a follow relationship" do
       user1 = create(:user)
       user2 = create(:user)
-      
+
       expect { user1.follow(user2) }.to change(Follow, :count).by(1)
       expect(user1.following).to include(user2)
     end
@@ -973,24 +973,24 @@ end
 # spec/requests/posts_spec.rb
 RSpec.describe "Posts", type: :request do
   let(:user) { create(:user) }
-  
+
   before do
     login_as(user)
   end
-  
+
   describe "GET /posts" do
     it "returns successful response" do
       get posts_path
       expect(response).to have_http_status(:success)
     end
-    
+
     it "displays user's posts" do
       create(:post, author: user, content: "My post")
       get posts_path
       expect(response.body).to include("My post")
     end
   end
-  
+
   describe "POST /posts" do
     it "creates a new post" do
       expect {
@@ -1030,18 +1030,18 @@ RSpec.describe "End-to-End User Journey", type: :feature do
     fill_in "Confirm Password", with: "password123"
     click_button "Sign up"
     expect(page).to have_content("Welcome to Microblog")
-    
+
     # 2. Create post
     fill_in "post_content", with: "Hello world!"
     click_button "Post"
     expect(page).to have_content("Hello world!")
-    
+
     # 3. Follow another user
     user2 = create(:user, username: "bob")
     visit user_path(user2)
     click_button "Follow"
     expect(page).to have_content("You are now following bob")
-    
+
     # 4. View feed
     visit root_path
     expect(page).to have_content("Hello world!")
@@ -1116,14 +1116,14 @@ services:
   db:
     image: postgres:16
     # Database configuration
-  
+
   web:
     build: .
     # Application configuration
     depends_on:
       - db
     # Scale with: docker compose up --scale web=3
-  
+
   traefik:
     image: traefik:v2.10
     # Load balancer configuration
@@ -1213,7 +1213,7 @@ docker compose up -d --scale web=3
 # app/jobs/fan_out_feed_job.rb
 class FanOutFeedJob < ApplicationJob
   queue_as :default
-  
+
   def perform(post_id)
     post = Post.find(post_id)
     # Heavy operation (fan-out to all followers)
@@ -1266,7 +1266,7 @@ production:
     <<: *default
     database: microblog_production
     host: <%= ENV.fetch("DATABASE_HOST") { "db-primary" } %>
-  
+
   replica:
     <<: *default
     database: microblog_production
@@ -1686,8 +1686,8 @@ Study this codebase to understand how real-world applications are built. Each op
 
 ---
 
-**Document Version:** 1.0  
-**Last Updated:** 2024-11-04  
-**Target Audience:** Junior Software Engineers, Students, Developers Learning Production Rails  
+**Document Version:** 1.0
+**Last Updated:** 2024-11-04
+**Target Audience:** Junior Software Engineers, Students, Developers Learning Production Rails
 **Status:** ✅ Complete Educational Case Study
 

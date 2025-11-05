@@ -6,6 +6,9 @@ This directory contains all documentation for the microblog application. Documen
 
 For a comprehensive understanding, read documents in this order:
 
+### 0. Start Here (Educational Overview) ⭐ NEW
+- **045_EDUCATIONAL_CASE_STUDY.md** - **Complete educational case study for junior engineers** - Explains everything implemented in this codebase, from database design to horizontal scaling, perfect for learning production-grade Rails development
+
 ### 1. Project Overview & Setup
 - **001_DATABASE_DIAGRAM.md** - Database schema and relationships
 - **002_DEVELOPMENT.md** - Development setup and guidelines
@@ -83,10 +86,11 @@ For a comprehensive understanding, read documents in this order:
 
 The most recent documents added (in reverse chronological order):
 
-1. **035_BIN_JOBS_SEGFAULT_ISSUE.md** - bin/jobs segfault issue and workaround (Nov 4, 16:32)
-2. **034_READ_REPLICAS_SETUP.md** - Read replicas configuration guide
-3. **025_BACKFILL_COUNTER_CACHES.md** - Counter cache backfilling guide (Nov 4, 10:33)
-4. **024_WHY_NOT_BACKFILL_IN_MIGRATIONS.md** - Migration best practices (Nov 4, 10:29)
+1. **045_EDUCATIONAL_CASE_STUDY.md** - Complete educational case study for junior engineers (Nov 4)
+2. **044_MODERATION_DOCUMENTS_COMPARISON.md** - Comparison of moderation system proposals
+3. **043_MODERATION_IDEOLOGY.md** - Strategic moderation approach
+4. **042_MODERATION_SYSTEM_PROPOSAL.md** - Technical moderation implementation proposal
+5. **041_ADMIN_DASHBOARD_ARCHITECTURE_PROPOSAL.md** - Admin dashboard architecture options
 
 ## 📝 Document Naming Convention
 
@@ -102,12 +106,18 @@ This allows you to:
 
 ## 🔍 Finding Information
 
+- **New to the codebase?** → Start with `045_EDUCATIONAL_CASE_STUDY.md` for comprehensive overview
 - **Performance issues?** → Start with `004_PERFORMANCE_ANALYSIS.md` or `022_PERFORMANCE_AT_SCALE.md`
 - **Load testing?** → `005_LOAD_TESTING.md` and `006_MONITORING_GUIDE.md`
 - **Database optimization?** → `008_DATABASE_OPTIMIZATION.md` and `009_FEED_QUERY_OPTIMIZATION.md`
 - **Query performance?** → `017-020_QUERY_PLAN_*.md` series
 - **Counter cache?** → `023-025_*` documents
+- **Fan-out on write?** → `033_FAN_OUT_ON_WRITE_IMPLEMENTATION.md`
+- **Rate limiting?** → `031_RATE_LIMITING_IMPLEMENTATION.md`
+- **Horizontal scaling?** → `036_HORIZONTAL_SCALING.md`
 - **Read replicas?** → `034_READ_REPLICAS_SETUP.md`
 - **Solid Queue issues?** → `026_SOLID_QUEUE_SETUP.md` or `035_BIN_JOBS_SEGFAULT_ISSUE.md`
 - **Architecture?** → `021_ARCHITECTURE_AND_FEED_PROPOSALS.md`
+- **Admin dashboard?** → `041_ADMIN_DASHBOARD_ARCHITECTURE_PROPOSAL.md`
+- **Moderation system?** → `042_MODERATION_SYSTEM_PROPOSAL.md` and `043_MODERATION_IDEOLOGY.md`
 
