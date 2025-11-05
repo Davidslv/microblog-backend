@@ -1,5 +1,7 @@
 class PostsController < ApplicationController
-  before_action :require_login_for_create, only: [ :create ]
+  # Allow public access to index and show
+  skip_before_action :require_login, only: [ :index, :show ]
+  before_action :require_login, only: [ :create ]
 
   def index
     @post = Post.new
@@ -68,7 +70,7 @@ class PostsController < ApplicationController
       cursor: replies_cursor,
       order: :asc
     )
-    
+
     # If replying to a specific reply, set the parent_id
     # Otherwise, reply to the main post
     if params[:reply_to].present?
@@ -107,12 +109,5 @@ class PostsController < ApplicationController
 
   def post_params
     params.require(:post).permit(:content, :parent_id)
-  end
-
-  def require_login_for_create
-    unless logged_in?
-      flash[:alert] = "You must be logged in to create a post."
-      redirect_to posts_path
-    end
   end
 end

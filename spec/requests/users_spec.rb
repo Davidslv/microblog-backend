@@ -91,9 +91,9 @@ RSpec.describe 'Users', type: :request do
     end
 
     context 'when not logged in' do
-      it 'redirects to root' do
+      it 'redirects to login' do
         get edit_user_path(user)
-        expect(response).to redirect_to(root_path)
+        expect(response).to redirect_to(login_path)
       end
 
       it 'displays error message' do
@@ -275,9 +275,9 @@ RSpec.describe 'Users', type: :request do
         expect(User.exists?(user_id)).to be true
       end
 
-      it 'redirects to root' do
+      it 'redirects to login' do
         delete user_path(user)
-        expect(response).to redirect_to(root_path)
+        expect(response).to redirect_to(login_path)
       end
     end
 

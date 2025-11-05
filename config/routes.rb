@@ -15,15 +15,18 @@ Rails.application.routes.draw do
   # Posts
   resources :posts, only: [ :index, :show, :create ]
 
-  # Users
-  resources :users, only: [ :show, :edit, :update, :destroy ]
+  # Authentication
+  get "/login", to: "sessions#new", as: "login"
+  post "/login", to: "sessions#create"
+  delete "/logout", to: "sessions#destroy", as: "logout"
+
+  # Users (including signup)
+  resources :users, only: [ :show, :new, :create, :edit, :update, :destroy ]
+  get "/signup", to: "users#new", as: "signup"
 
   # Following
   post "/follow/:user_id", to: "follows#create", as: "follow"
   delete "/follow/:user_id", to: "follows#destroy"
-
-  # Temporary dev route - remove before production!
-  get "/dev/login/:user_id", to: "application#dev_login", as: "dev_login"
 
   # Monitoring endpoints (development only)
   if Rails.env.development?

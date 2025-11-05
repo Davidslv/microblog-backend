@@ -1,7 +1,26 @@
 class UsersController < ApplicationController
   before_action :set_user, only: [ :show, :edit, :update, :destroy ]
-  before_action :require_login, only: [ :edit, :update, :destroy ]
   before_action :require_owner, only: [ :edit, :update, :destroy ]
+  # Allow public access to show and signup without login
+  skip_before_action :require_login, only: [:show, :new, :create]
+
+  def new
+    # Redirect if already logged in
+    redirect_to root_path if logged_in?
+    @user = User.new
+  end
+
+  def create
+    @user = User.new(user_params_for_signup)
+
+    if @user.save
+      session[:user_id] = @user.id
+      redirect_to root_path, notice: "Welcome to Microblog, #{@user.username}!"
+    else
+      flash.now[:alert] = @user.errors.full_messages.join(", ")
+      render :new, status: :unprocessable_entity
+    end
+  end
 
   def show
     # Cache user profile data (1 hour TTL for user, 5 minutes for posts)
@@ -76,11 +95,10 @@ class UsersController < ApplicationController
     permitted
   end
 
-  def require_login
-    unless logged_in?
-      redirect_to root_path, alert: "You must be logged in to perform that action."
-    end
+  def user_params_for_signup
+    params.require(:user).permit(:username, :password, :password_confirmation)
   end
+
 
   def require_owner
     unless current_user == @user

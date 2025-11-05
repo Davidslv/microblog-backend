@@ -70,6 +70,26 @@ class Rack::Attack
     end
   end
 
+  ### Throttle Authentication Attempts ###
+
+  # Throttle login attempts by IP
+  # Limit: 5 attempts per 5 minutes per IP
+  # Prevents brute force attacks on login
+  throttle("logins/ip", limit: 5, period: 5.minutes) do |req|
+    if req.path == "/login" && req.post?
+      req.ip
+    end
+  end
+
+  # Throttle signup attempts by IP
+  # Limit: 3 signups per hour per IP
+  # Prevents spam account creation
+  throttle("signups/ip", limit: 3, period: 1.hour) do |req|
+    if req.path == "/signup" && req.post?
+      req.ip
+    end
+  end
+
   ### Throttle API Requests (if you add API endpoints later) ###
 
   # Throttle API requests by IP

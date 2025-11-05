@@ -186,7 +186,7 @@ RSpec.describe 'Users Feature', type: :feature do
       # Don't login - just visit without session
       visit edit_user_path(user)
 
-      expect(page).to have_current_path(root_path)
+      expect(page).to have_current_path(login_path)
       expect(page).to have_content('You must be logged in')
     end
 

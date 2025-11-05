@@ -169,16 +169,16 @@ RSpec.describe 'Posts', type: :request do
     context 'when not logged in' do
       before { logout }
 
-      it 'redirects to posts index' do
+      it 'redirects to login page' do
         post posts_path, params: { post: { content: 'Test post' } }
-        expect(response).to redirect_to(posts_path)
+        expect(response).to redirect_to(login_path)
       end
 
       it 'displays error message' do
         post posts_path, params: { post: { content: 'Test post' } }
-        # The controller sets flash[:alert] and redirects
+        # The controller sets flash[:alert] and redirects to login
         # Check that we got redirected (which means the error was handled)
-        expect(response).to redirect_to(posts_path)
+        expect(response).to redirect_to(login_path)
         follow_redirect!
         # The flash message should be displayed
         # Since rack_test doesn't preserve flash across redirects in tests,
