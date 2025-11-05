@@ -86,12 +86,13 @@ For a comprehensive understanding, read documents in this order:
 
 The most recent documents added (in reverse chronological order):
 
-1. **046_SDLC_DEVELOPER_CHECKLIST.md** - ⭐ NEW Comprehensive SDLC developer checklist with codebase analysis
-2. **045_EDUCATIONAL_CASE_STUDY.md** - Complete educational case study for junior engineers (Nov 4)
-3. **044_MODERATION_DOCUMENTS_COMPARISON.md** - Comparison of moderation system proposals
-4. **043_MODERATION_IDEOLOGY.md** - Strategic moderation approach
-5. **042_MODERATION_SYSTEM_PROPOSAL.md** - Technical moderation implementation proposal
-6. **041_ADMIN_DASHBOARD_ARCHITECTURE_PROPOSAL.md** - Admin dashboard architecture options
+1. **047_BUILDING_A_SCALABLE_MICROBLOG_JOURNEY.md** - ⭐ NEW Energetic blog post about the journey building this codebase with diagrams and Big O explanations
+2. **046_SDLC_DEVELOPER_CHECKLIST.md** - Comprehensive SDLC developer checklist with codebase analysis
+3. **045_EDUCATIONAL_CASE_STUDY.md** - Complete educational case study for junior engineers (Nov 4)
+4. **044_MODERATION_DOCUMENTS_COMPARISON.md** - Comparison of moderation system proposals
+5. **043_MODERATION_IDEOLOGY.md** - Strategic moderation approach
+6. **042_MODERATION_SYSTEM_PROPOSAL.md** - Technical moderation implementation proposal
+7. **041_ADMIN_DASHBOARD_ARCHITECTURE_PROPOSAL.md** - Admin dashboard architecture options
 
 ## 📝 Document Naming Convention
 
@@ -122,4 +123,5 @@ This allows you to:
 - **Admin dashboard?** → `041_ADMIN_DASHBOARD_ARCHITECTURE_PROPOSAL.md`
 - **Moderation system?** → `042_MODERATION_SYSTEM_PROPOSAL.md` and `043_MODERATION_IDEOLOGY.md`
 - **SDLC concepts & best practices?** → `046_SDLC_DEVELOPER_CHECKLIST.md` - Comprehensive checklist for software engineers
+- **Journey & story?** → `047_BUILDING_A_SCALABLE_MICROBLOG_JOURNEY.md` - Energetic blog post about the building journey
 
