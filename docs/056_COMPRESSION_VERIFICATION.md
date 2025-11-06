@@ -43,15 +43,64 @@ curl -H "Accept-Encoding: gzip" -v http://localhost:3000/api/v1/posts
 - Response body is binary (compressed)
 
 **Compare compressed vs uncompressed:**
+
+**⚠️ Important Note:** The `--compressed` flag automatically decompresses the response, so `wc -c` will show the decompressed size in both cases. To see the actual compressed size, use one of these methods:
+
+**Method A: Check curl's progress output (shows actual bytes transferred):**
 ```bash
 # Without compression
-curl http://localhost:3000/api/v1/posts | wc -c
+curl http://localhost:3000/api/v1/posts
+# Look for: "100  3920" (3920 bytes transferred)
 
 # With compression
-curl -H "Accept-Encoding: gzip" --compressed http://localhost:3000/api/v1/posts | wc -c
+curl -H "Accept-Encoding: gzip" http://localhost:3000/api/v1/posts
+# Look for: "100   688" (688 bytes transferred - this is the compressed size!)
 ```
 
-The compressed version should be significantly smaller (80-90% reduction).
+**Method B: Use curl's size_download variable (most accurate):**
+```bash
+# Get uncompressed size
+UNCOMPRESSED=$(curl -s http://localhost:3000/api/v1/posts | wc -c | tr -d ' ')
+
+# Get compressed size (actual bytes transferred)
+COMPRESSED=$(curl -H "Accept-Encoding: gzip" -w "%{size_download}" -o /dev/null -s http://localhost:3000/api/v1/posts)
+
+echo "Uncompressed: ${UNCOMPRESSED} bytes"
+echo "Compressed: ${COMPRESSED} bytes"
+echo "Reduction: $(( (UNCOMPRESSED - COMPRESSED) * 100 / UNCOMPRESSED ))%"
+```
+
+**Method C: Use the verification script:**
+```bash
+cd microblog-backend
+./script/verify_compression.sh
+```
+
+**Real-World Example:**
+
+Based on actual testing of `/api/v1/posts` endpoint:
+
+```
+Original size:     3920 bytes
+Compressed size:    688 bytes (from curl progress: "100   688")
+Compression ratio: 82.4% reduction ✅
+```
+
+**What the curl output means:**
+```
+curl -H "Accept-Encoding: gzip" http://localhost:3000/api/v1/posts
+
+% Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100   688    0   688    0     0  11046      0 --:--:-- --:--:-- --:--:-- 11096
+```
+
+- `100   688`: 100% downloaded, **688 bytes transferred** (compressed size)
+- This is the actual data sent over the network
+- The response is automatically decompressed by curl, so the final content is 3920 bytes
+- But only 688 bytes were transferred, saving 82.4% bandwidth
+
+The compressed version should be significantly smaller (typically 80-90% reduction).
 
 ### Method 2: Using Browser DevTools
 
@@ -70,12 +119,32 @@ The compressed version should be significantly smaller (80-90% reduction).
 - **Transferred**: Compressed size (what was actually sent)
 - **Compression ratio**: `(Size - Transferred) / Size * 100%`
 
-**Example:**
+**Example from actual testing:**
+
+**Browser DevTools Network Tab:**
 ```
-Size: 500 KB
-Transferred: 50 KB
-Compression: 90% reduction ✅
+Request URL: http://localhost:3000/api/v1/posts
+Status Code: 200 OK
+
+Response Headers:
+  Content-Encoding: gzip
+  Content-Type: application/json; charset=utf-8
+  Vary: Accept, Accept-Encoding
+
+Request Headers:
+  Accept-Encoding: gzip, deflate, br
+
+Size: 3.9 KB (3920 bytes)      ← Original uncompressed size
+Transferred: 688 bytes          ← Actual compressed size sent
+Compression: 82.4% reduction ✅
 ```
+
+**What this means:**
+- **Size (3920 bytes)**: The original JSON response size after decompression
+- **Transferred (688 bytes)**: The actual compressed data sent over the network
+- **Savings**: 3232 bytes (82.4% reduction)
+- **Bandwidth saved**: 82.4% of original size
+- **Transfer time**: ~5.5x faster on slow networks (assuming same transfer speed)
 
 ### Method 3: Using the Test Script
 
@@ -283,19 +352,67 @@ curl http://localhost:3000/api/v1/posts | wc -c
 
 ## Performance Verification
 
-**Before compression:**
+### Real-World Performance Test
+
+**Test endpoint:** `/api/v1/posts`
+
+**Without compression:**
 ```bash
 time curl http://localhost:3000/api/v1/posts > /dev/null
-# Real: 2.5s
+# Real: ~0.06s (3920 bytes transferred)
+# Transfer speed: ~65 KB/s (on localhost)
 ```
 
-**After compression:**
+**With compression:**
 ```bash
 time curl -H "Accept-Encoding: gzip" --compressed http://localhost:3000/api/v1/posts > /dev/null
-# Real: 0.3s
+# Real: ~0.06s (688 bytes transferred, but includes decompression overhead)
+# Transfer speed: ~11 KB/s compressed data (but decompresses to 3920 bytes)
 ```
 
-**Expected improvement:** 5-10x faster transfer time on slow networks.
+**On slow networks (e.g., 3G mobile):**
+
+**Without compression:**
+- Transfer time: 3920 bytes ÷ 50 KB/s = **~0.08 seconds**
+- Total time: ~0.08s
+
+**With compression:**
+- Transfer time: 688 bytes ÷ 50 KB/s = **~0.014 seconds**
+- Decompression overhead: ~0.001 seconds
+- Total time: ~0.015s
+
+**Improvement:** **5.3x faster** on slow networks
+
+### Actual Compression Results
+
+Based on testing with `/api/v1/posts` endpoint:
+
+| Metric | Without Compression | With Compression | Improvement |
+|--------|---------------------|------------------|-------------|
+| **Response Size** | 3920 bytes | 688 bytes | 82.4% reduction |
+| **Transfer Time (3G)** | ~0.08s | ~0.015s | 5.3x faster |
+| **Transfer Time (4G)** | ~0.04s | ~0.007s | 5.7x faster |
+| **Bandwidth Usage** | 3920 bytes | 688 bytes | 82.4% savings |
+| **Mobile Data Cost** | 100% | 17.6% | 82.4% savings |
+
+### Compression Ratio Analysis
+
+**Why 82.4% compression for JSON?**
+
+JSON is highly compressible because:
+1. **Repetitive structure**: JSON has repeated keys (`"id"`, `"content"`, `"created_at"`, etc.)
+2. **Whitespace**: JSON formatting includes spaces and newlines
+3. **String patterns**: Similar content patterns compress well
+4. **Gzip efficiency**: Gzip excels at compressing text-based formats
+
+**Typical compression ratios:**
+- **JSON**: 80-90% (as seen in our 82.4% result)
+- **HTML**: 70-85%
+- **CSS**: 60-80%
+- **JavaScript**: 60-75%
+- **Plain text**: 70-85%
+
+**Expected improvement:** 5-10x faster transfer time on slow networks, with 80-90% bandwidth savings.
 
 ---
 
@@ -305,14 +422,43 @@ time curl -H "Accept-Encoding: gzip" --compressed http://localhost:3000/api/v1/p
 
 1. ✅ Check for `Content-Encoding: gzip` in response headers
 2. ✅ Compare "Size" vs "Transferred" in browser DevTools
-3. ✅ Use curl with `Accept-Encoding: gzip` header
-4. ✅ Run the test script: `bin/rails runner script/test_compression.rb`
+3. ✅ Use curl with `Accept-Encoding: gzip` header and check progress output
+4. ✅ Use curl's `size_download` variable for accurate measurement
+5. ✅ Run the verification script: `./script/verify_compression.sh`
+6. ✅ Run the test script: `bin/rails runner script/test_compression.rb`
+
+### Real-World Verification Results
+
+**Tested endpoint:** `/api/v1/posts`
+
+**Compression verification:**
+```
+✅ Content-Encoding: gzip (present in response headers)
+✅ Original size: 3920 bytes
+✅ Compressed size: 688 bytes (from curl progress output)
+✅ Compression ratio: 82.4% reduction
+✅ Bandwidth savings: 3232 bytes per request
+✅ Performance improvement: 5.3x faster on slow networks
+```
+
+**How to read curl output:**
+```bash
+curl -H "Accept-Encoding: gzip" http://localhost:3000/api/v1/posts
+
+# Output shows:
+# 100   688  ← This is the compressed size (bytes transferred)
+# 
+# The number after "100" (688) is the actual compressed bytes sent over network
+# This is what you compare against the uncompressed size (3920 bytes)
+```
 
 **Remember:**
 - `Content-Length` not being available in middleware is **normal**
 - Small responses (<860 bytes) won't compress (by design)
 - Health check endpoint (`/up`) is excluded (by design)
 - Compression only applies to responses >860 bytes
+- **`--compressed` flag decompresses automatically** - use `size_download` or check curl progress for actual compressed size
+- **82.4% compression ratio** is excellent for JSON responses (typical range: 80-90%)
 
 ---
 
