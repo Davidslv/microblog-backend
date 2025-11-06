@@ -58,7 +58,7 @@ export default function () {
     // 40% - View feed (most common)
     const filters = ['timeline', 'mine', 'following'];
     const filter = filters[Math.floor(Math.random() * filters.length)];
-    
+
     const startTime = Date.now();
     const feedRes = http.get(`${API_BASE}/posts?filter=${filter}`, {
       cookies: cookies,

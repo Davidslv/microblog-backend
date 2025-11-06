@@ -136,7 +136,7 @@ All documentation is in the `docs/` folder:
 
 ---
 
-**Document Version:** 1.0  
-**Last Updated:** 2024  
+**Document Version:** 1.0
+**Last Updated:** 2024
 **Status:** Phase 1 Complete ✅
 
