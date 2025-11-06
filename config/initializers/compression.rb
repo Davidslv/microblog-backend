@@ -13,13 +13,13 @@ Rails.application.config.middleware.use Rack::Deflater, {
   if: ->(env, status, headers, body) {
     # Only compress successful responses
     return false unless status == 200
-    
-    # Only compress if response is large enough (avoid overhead for small responses)
-    # Check Content-Length if available, otherwise allow compression (Rack::Deflater will handle it)
-    content_length = headers['Content-Length']&.to_i
-    return false if content_length && content_length < 1024
-    
+
+    # Skip health check endpoint (small response, not worth compressing)
+    return false if env['PATH_INFO'] == '/up'
+
     # Only compress API responses and compressible content types
+    # Note: Rack::Deflater automatically skips very small responses (<860 bytes)
+    # so we don't need to check Content-Length here (it may not be available yet)
     env['PATH_INFO'].start_with?('/api/') ||
       headers['Content-Type']&.include?('application/json') ||
       headers['Content-Type']&.include?('text/html') ||
