@@ -40,3 +40,4 @@
 
 # SimpleCov coverage reports
 /coverage
+monolith_results.txt
