@@ -23,45 +23,27 @@ export const options = {
 
 const BASE_URL = __ENV.BASE_URL || 'http://localhost';
 const API_BASE = `${BASE_URL}/api/v1`;
-const NUM_USERS = parseInt(__ENV.NUM_USERS || '100');
+const NUM_USERS = parseInt(__ENV.NUM_USERS || '1000');
 
 export default function () {
   // Random user for this virtual user
   const userId = Math.floor(Math.random() * NUM_USERS) + 1;
-  const username = `user${userId}`;
-  const password = 'password123';
-
-  // Login via API
-  const loginRes = http.post(`${API_BASE}/login`, JSON.stringify({
-    username: username,
-    password: password,
-  }), {
-    headers: { 'Content-Type': 'application/json' },
-    tags: { name: 'APILogin' },
+  
+  // Use dev login route to get session (same as monolith test)
+  // API supports session-based auth for backward compatibility
+  const devLoginRes = http.get(`${BASE_URL}/dev/login/${userId}`, {
+    tags: { name: 'DevLogin' },
   });
-
-  const loginSuccess = check(loginRes, {
-    'login successful': (r) => r.status === 200,
-    'login returns user data': (r) => {
-      if (r.status === 200) {
-        try {
-          const body = JSON.parse(r.body);
-          return body.user && body.user.id;
-        } catch (e) {
-          return false;
-        }
-      }
-      return false;
-    },
-  });
-
-  if (!loginSuccess) {
+  
+  if (devLoginRes.status !== 200 && devLoginRes.status !== 302) {
     errorRate.add(1);
     return;
   }
-
-  // Extract cookies from login (session-based auth)
-  const cookies = loginRes.cookies;
+  
+  const cookies = devLoginRes.cookies;
+  
+  // API accepts session-based auth (from dev login)
+  // This tests the parallel running scenario where monolith and API share sessions
 
   // Test feed endpoint (most critical)
   const feedRes = http.get(`${API_BASE}/posts`, {

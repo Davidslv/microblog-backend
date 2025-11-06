@@ -25,6 +25,22 @@ class ApplicationController < ActionController::Base
 
   helper_method :current_user, :logged_in?
 
+  # Development-only: Quick login for load testing
+  # Skip authentication check for this route
+  skip_before_action :require_login, only: [:dev_login]
+  
+  def dev_login
+    return head :forbidden unless Rails.env.development?
+    
+    user = User.find_by(id: params[:user_id])
+    if user
+      session[:user_id] = user.id
+      redirect_to root_path, notice: "Logged in as user #{user.username}"
+    else
+      redirect_to root_path, alert: "User not found"
+    end
+  end
+
   # Cursor-based pagination helper
   # Uses SQL WHERE clause for efficient pagination (better than OFFSET for large datasets)
   #
