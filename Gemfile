@@ -50,6 +50,9 @@ gem "rack-attack"
 # CORS support for API endpoints
 gem "rack-cors"
 
+# JWT authentication for API
+gem "jwt"
+
 # Note: We use custom cursor-based pagination (no gem needed)
 # See: app/controllers/application_controller.rb#cursor_paginate
 

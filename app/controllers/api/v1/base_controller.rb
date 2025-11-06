@@ -15,14 +15,14 @@ module Api
 
       def current_user
         @current_user ||= begin
-          # Try JWT token first (if implemented)
+          # Try JWT token first (primary authentication method)
           token = extract_jwt_token
-          if token && defined?(JwtService)
+          if token
             payload = JwtService.decode(token)
             return User.find_by(id: payload[:user_id]) if payload
           end
 
-          # Fallback to session (for parallel running with monolith)
+          # Fallback to session (for backward compatibility during migration)
           # This allows users logged in via monolith to access API
           if session[:user_id]
             return User.find_by(id: session[:user_id])

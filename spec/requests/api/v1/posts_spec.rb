@@ -121,15 +121,16 @@ RSpec.describe "Api::V1::Posts", type: :request do
   end
 
   describe "POST /api/v1/posts" do
-    before do
+    let(:token) do
       post "#{api_base}/login", params: { username: user.username, password: "password123" }
+      JSON.parse(response.body)["token"]
     end
 
-    it "creates a new post" do
+    it "creates a new post with JWT token" do
       post_params = { post: { content: "Hello from API!" } }
       
       expect {
-        post "#{api_base}/posts", params: post_params
+        post "#{api_base}/posts", params: post_params, headers: { "Authorization" => "Bearer #{token}" }
       }.to change(Post, :count).by(1)
       
       expect(response).to have_http_status(:created)
@@ -143,7 +144,7 @@ RSpec.describe "Api::V1::Posts", type: :request do
       post_params = { post: { content: "This is a reply", parent_id: parent_post.id } }
       
       expect {
-        post "#{api_base}/posts", params: post_params
+        post "#{api_base}/posts", params: post_params, headers: { "Authorization" => "Bearer #{token}" }
       }.to change(Post, :count).by(1)
       
       json = JSON.parse(response.body)
@@ -153,7 +154,7 @@ RSpec.describe "Api::V1::Posts", type: :request do
     it "returns errors for invalid post" do
       post_params = { post: { content: "" } }
       
-      post "#{api_base}/posts", params: post_params
+      post "#{api_base}/posts", params: post_params, headers: { "Authorization" => "Bearer #{token}" }
       
       expect(response).to have_http_status(:unprocessable_entity)
       json = JSON.parse(response.body)
@@ -161,9 +162,6 @@ RSpec.describe "Api::V1::Posts", type: :request do
     end
 
     it "requires authentication" do
-      # Logout first to clear session
-      delete "#{api_base}/logout"
-      
       post "#{api_base}/posts", params: { post: { content: "Test" } }
       
       expect(response).to have_http_status(:unauthorized)

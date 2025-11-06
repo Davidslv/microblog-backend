@@ -7,12 +7,23 @@ module Api
         user = User.find_by(username: params[:username])
 
         if user&.authenticate(params[:password])
-          # For now, use session (same as monolith) for parallel running
-          # Later, we'll add JWT token generation here
+          # Generate JWT token
+          token = JwtService.encode({ user_id: user.id })
+
+          # Set cookie for backward compatibility (session fallback)
+          cookies[:jwt_token] = {
+            value: token,
+            httponly: true,
+            secure: Rails.env.production?,
+            same_site: :lax
+          }
+
+          # Also set session for backward compatibility with monolith
           session[:user_id] = user.id
 
           render json: {
             user: user_json(user),
+            token: token,
             message: "Login successful"
           }
         else
@@ -25,8 +36,24 @@ module Api
       end
 
       def destroy
+        cookies.delete(:jwt_token)
         session[:user_id] = nil
         render json: { message: "Logged out successfully" }
+      end
+
+      def refresh
+        if current_user
+          token = JwtService.encode({ user_id: current_user.id })
+          cookies[:jwt_token] = {
+            value: token,
+            httponly: true,
+            secure: Rails.env.production?,
+            same_site: :lax
+          }
+          render json: { token: token }
+        else
+          render json: { error: "Unauthorized" }, status: :unauthorized
+        end
       end
 
       private
