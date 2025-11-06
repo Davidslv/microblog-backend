@@ -11,7 +11,7 @@ module Api
         )
 
         render json: {
-          user: user_json(user),
+          user: user_json(user, current_user),
           posts: posts.map { |p| post_json(p) },
           pagination: {
             cursor: next_cursor,
@@ -75,8 +75,8 @@ module Api
         end
       end
 
-      def user_json(user)
-        {
+      def user_json(user, current_user = nil)
+        json = {
           id: user.id,
           username: user.username,
           description: user.description,
@@ -85,13 +85,26 @@ module Api
           posts_count: user.posts_count,
           created_at: user.created_at.iso8601
         }
+        
+        # Add follow status if current_user is viewing another user's profile
+        if current_user && current_user != user
+          json[:is_following] = current_user.following?(user)
+        end
+        
+        json
       end
 
       def post_json(post)
         {
           id: post.id,
           content: post.content,
-          created_at: post.created_at.iso8601
+          author: {
+            id: post.author_id,
+            username: post.author_name
+          },
+          created_at: post.created_at.iso8601,
+          parent_id: post.parent_id,
+          replies_count: post.replies.count
         }
       end
     end
