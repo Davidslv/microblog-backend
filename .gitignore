@@ -41,3 +41,8 @@
 # SimpleCov coverage reports
 /coverage
 monolith_results.txt
+
+# Test result files
+*.txt
+monolith_results.txt
+api_results.txt
