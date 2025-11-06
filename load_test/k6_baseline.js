@@ -32,7 +32,8 @@ export const options = {
 const BASE_URL = __ENV.BASE_URL || 'http://localhost';
 
 // Get a random user ID (assumes users exist from 1 to NUM_USERS)
-const NUM_USERS = parseInt(__ENV.NUM_USERS || '100');
+// Adjust based on actual user count in database
+const NUM_USERS = parseInt(__ENV.NUM_USERS || '1000');
 
 // Helper function to extract CSRF token from HTML
 function extractCSRFToken(html) {
@@ -58,10 +59,11 @@ export default function () {
   // Login as user (dev login route)
   const loginRes = http.get(`${BASE_URL}/dev/login/${userId}`, {
     tags: { name: 'Login' },
+    redirects: 1,  // Follow redirect
   });
 
   const loginSuccess = check(loginRes, {
-    'login successful': (r) => r.status === 302 || r.status === 200,
+    'login successful': (r) => r.status === 200 || r.status === 302,
   });
 
   if (!loginSuccess) {
