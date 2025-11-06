@@ -57,12 +57,10 @@ Rails.application.configure do
   config.active_job.verbose_enqueue_logs = true
 
   # Use Solid Queue for background jobs in development
-  # Temporarily disable Solid Queue to avoid macOS fork issues
-  # Use async adapter for development testing
-  config.active_job.queue_adapter = ENV["SOLID_QUEUE_IN_PUMA"] == "true" ? :solid_queue : :async
-  if ENV["SOLID_QUEUE_IN_PUMA"] == "true"
-    config.solid_queue.connects_to = { database: { writing: :primary } }
-  end
+  # When SOLID_QUEUE_IN_PUMA is not set, Solid Queue runs in separate process via bin/jobs
+  # This avoids macOS fork issues when running Solid Queue inside Puma
+  config.active_job.queue_adapter = ENV["SOLID_QUEUE_IN_PUMA"] == "true" ? :solid_queue : :solid_queue
+  config.solid_queue.connects_to = { database: { writing: :primary } }
 
   # Highlight code that triggered redirect in logs.
   config.action_dispatch.verbose_redirect_logs = true

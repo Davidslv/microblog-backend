@@ -85,12 +85,12 @@ module Api
           posts_count: user.posts_count,
           created_at: user.created_at.iso8601
         }
-        
+
         # Add follow status if current_user is viewing another user's profile
         if current_user && current_user != user
           json[:is_following] = current_user.following?(user)
         end
-        
+
         json
       end
 
