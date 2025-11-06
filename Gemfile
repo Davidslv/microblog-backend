@@ -47,6 +47,9 @@ gem "tailwindcss-rails"
 # Rate limiting middleware to protect against abuse and DDoS
 gem "rack-attack"
 
+# CORS support for API endpoints
+gem "rack-cors"
+
 # Note: We use custom cursor-based pagination (no gem needed)
 # See: app/controllers/application_controller.rb#cursor_paginate
 

@@ -24,6 +24,31 @@ rails runner script/load_test_seed.rb
 
 ## Test Scripts Overview
 
+### API Tests (New - Phase 1)
+
+**1. API Baseline Test (`k6_api_baseline.js`)**
+- **Purpose**: Quick sanity check for API endpoints
+- **Tests**: API login, feed endpoint, filtered feeds, post view, user profile
+- **Duration**: ~2 minutes
+- **Users**: 10 concurrent
+- **Endpoints**: `/api/v1/*` (JSON responses)
+
+**2. API Feed Test (`k6_api_feed_test.js`)**
+- **Purpose**: Focus on API feed endpoint performance
+- **Tests**: API feed with different filters
+- **Duration**: ~5 minutes
+- **Users**: Ramps to 100 concurrent
+- **Endpoints**: `/api/v1/posts` (JSON responses)
+
+**3. API Comprehensive Test (`k6_api_comprehensive.js`)**
+- **Purpose**: Realistic API usage simulation
+- **Tests**: All API endpoints with realistic distribution
+- **Duration**: ~9 minutes
+- **Users**: Ramps to 100 concurrent
+- **Endpoints**: `/api/v1/*` (JSON responses)
+
+### Monolith Tests (Existing)
+
 ### 1. Baseline Test (`k6_baseline.js`)
 **Purpose**: Quick sanity check
 - Tests: Login, feed page, filtered feeds, post view, user profile
@@ -78,6 +103,35 @@ rails runner script/load_test_seed.rb
 - **Use**: To test rate limiting behavior with realistic load distribution
 
 ## Run Tests
+
+### API vs Monolith Comparison
+
+**Compare Performance:**
+```bash
+# Run monolith baseline
+k6 run load_test/k6_baseline.js > monolith_results.txt
+
+# Run API baseline
+k6 run load_test/k6_api_baseline.js > api_results.txt
+
+# Compare results
+diff monolith_results.txt api_results.txt
+```
+
+**Quick API Test:**
+```bash
+k6 run load_test/k6_api_baseline.js
+```
+
+**API Feed Performance:**
+```bash
+k6 run load_test/k6_api_feed_test.js
+```
+
+**API Comprehensive:**
+```bash
+k6 run load_test/k6_api_comprehensive.js
+```
 
 ### Docker Setup (Recommended)
 

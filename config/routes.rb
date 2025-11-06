@@ -9,6 +9,42 @@ Rails.application.routes.draw do
   # get "manifest" => "rails/pwa#manifest", as: :pwa_manifest
   # get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
 
+  # ============================================================================
+  # API ROUTES (New Three-Layer Architecture)
+  # ============================================================================
+  # These routes run in parallel with the monolith routes below
+  # Both use the same database, same models, same business logic
+  # API returns JSON, monolith returns HTML
+  namespace :api do
+    namespace :v1 do
+      # Authentication
+      post "/login", to: "sessions#create"
+      delete "/logout", to: "sessions#destroy"
+      get "/me", to: "sessions#show"
+
+      # Users
+      resources :users, only: [:show, :create, :update, :destroy]
+      post "/signup", to: "users#create", as: "api_signup"
+
+      # Posts
+      resources :posts, only: [:index, :show, :create] do
+        member do
+          get :replies
+        end
+      end
+
+      # Follows
+      post "/users/:user_id/follow", to: "follows#create"
+      delete "/users/:user_id/follow", to: "follows#destroy"
+    end
+  end
+
+  # ============================================================================
+  # MONOLITH ROUTES (Existing - Keep for Parallel Running)
+  # ============================================================================
+  # These routes continue to work as before (HTML responses)
+  # They share the same database and models with API routes above
+
   # Root path
   root "posts#index"
 
