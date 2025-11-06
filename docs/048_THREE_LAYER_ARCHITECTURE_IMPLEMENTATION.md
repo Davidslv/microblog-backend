@@ -2065,30 +2065,590 @@ CABLE_DB_PASSWORD=cable_password
 
 ## Migration Strategy
 
+This section explains **how to run both the old monolith (ERB views) and new architecture (React + API) in parallel** during migration.
+
+### Architecture Overview: Parallel Run
+
+During migration, you run **three separate services** that all share the same database:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Load Balancer (Traefik)                   │
+│                    Routes traffic based on:                  │
+│                    - Path (/api/* → API, /* → old or new)   │
+│                    - Subdomain (app.example.com vs new.example.com) │
+│                    - Feature flag (cookie/header)            │
+└─────────────────────────────────────────────────────────────┘
+                          ↓
+        ┌─────────────────┴─────────────────┐
+        ↓                                   ↓
+┌───────────────────┐              ┌──────────────────┐
+│  Old Monolith     │              │  New Architecture│
+│  (Rails MVC)      │              │                  │
+│  - ERB Views      │              │  ┌────────────┐ │
+│  - Session Auth   │              │  │ React SPA  │ │
+│  Port: 3000       │              │  │ Port: 3001 │ │
+└───────────────────┘              │  └──────┬───────┘ │
+        ↓                          │         ↓         │
+┌───────────────────┐              │  ┌────────────┐ │
+│  Same Database     │              │  │ Rails API  │ │
+│  (PostgreSQL)      │◄─────────────┤  │ Port: 3002 │ │
+│                    │              │  └────────────┘ │
+│  - Users           │              │                │
+│  - Posts           │              └────────────────┘
+│  - Follows         │
+│  - FeedEntries     │
+└───────────────────┘
+```
+
 ### Phase 1: Parallel Run (Week 1-4)
 
-- Both old and new systems run simultaneously
-- Feature flag to route users
-- Monitor both systems
+**Goal:** Run both old and new systems simultaneously, sharing the same database
+
+#### Strategy 1: Path-Based Routing (Recommended)
+
+Route traffic based on URL path:
+- `/api/v1/*` → New Rails API
+- `/*` → Old Rails monolith (or new React app based on feature flag)
+
+**Docker Compose Configuration:**
+
+**File: `docker-compose.parallel.yml`**
+```yaml
+services:
+  # Shared database (both systems use this)
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${DATABASE_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-postgres}
+      POSTGRES_DB: microblog_development
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    networks:
+      - microblog-network
+
+  # OLD SYSTEM: Rails Monolith (ERB views, session auth)
+  web_old:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: sh -c "rm -f /rails/tmp/pids/server*.pid && bin/rails server -b 0.0.0.0 -p 3000"
+    environment:
+      RAILS_ENV: development
+      DATABASE_URL: postgresql://${DATABASE_USERNAME:-postgres}:${DATABASE_PASSWORD:-postgres}@db:5432/microblog_development
+      # Disable API-only mode for old system
+      API_ONLY: "false"
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - .:/rails
+    networks:
+      - microblog-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.web_old.rule=Host(`localhost`) && !PathPrefix(`/api`) && !PathPrefix(`/app`)"
+      - "traefik.http.routers.web_old.entrypoints=web"
+      - "traefik.http.services.web_old.loadbalancer.server.port=3000"
+
+  # NEW SYSTEM: Rails API (JSON only, JWT auth)
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: sh -c "rm -f /rails/tmp/pids/server*.pid && bin/rails server -b 0.0.0.0 -p 3002"
+    environment:
+      RAILS_ENV: development
+      DATABASE_URL: postgresql://${DATABASE_USERNAME:-postgres}:${DATABASE_PASSWORD:-postgres}@db:5432/microblog_development
+      # Enable API-only mode
+      API_ONLY: "true"
+      FRONTEND_URL: http://localhost:3001
+    ports:
+      - "3002:3002"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - .:/rails
+    networks:
+      - microblog-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.api.rule=Host(`localhost`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.api.entrypoints=web"
+      - "traefik.http.services.api.loadbalancer.server.port=3002"
+
+  # NEW SYSTEM: React Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    command: npm run dev -- --host 0.0.0.0 --port 5173
+    environment:
+      VITE_API_URL: http://localhost/api/v1
+    ports:
+      - "3001:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - microblog-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=Host(`localhost`) && PathPrefix(`/app`)"
+      - "traefik.http.routers.frontend.entrypoints=web"
+      - "traefik.http.services.frontend.loadbalancer.server.port=5173"
+
+  # Load balancer
+  traefik:
+    image: traefik:v2.10
+    command:
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--api.dashboard=true"
+      - "--api.insecure=true"
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      - web_old
+      - api
+      - frontend
+    networks:
+      - microblog-network
+
+volumes:
+  pg_data:
+
+networks:
+  microblog-network:
+    driver: bridge
+```
+
+**Routing Rules:**
+- `http://localhost/` → Old monolith (ERB views)
+- `http://localhost/api/v1/*` → New API (JSON)
+- `http://localhost/app/*` → New React frontend
+
+**Rails Application Configuration:**
+
+**File: `config/application.rb`**
+```ruby
+module Microblog
+  class Application < Rails::Application
+    config.load_defaults 8.1
+
+    # Enable API mode ONLY if API_ONLY env var is set
+    if ENV['API_ONLY'] == 'true'
+      config.api_only = true
+      # Add CORS for API
+      config.middleware.insert_before 0, Rack::Cors do
+        allow do
+          origins Rails.env.development? ? ['http://localhost:3001', 'http://localhost:5173'] : ENV['FRONTEND_URL']
+          resource '*',
+            headers: :any,
+            methods: [:get, :post, :put, :patch, :delete, :options, :head],
+            credentials: true
+        end
+      end
+    else
+      # Keep full Rails stack for old system
+      config.api_only = false
+    end
+
+    # Database configuration (shared)
+    config.active_record.database_selector = { delay: 2.seconds }
+    config.active_record.database_resolver = ActiveRecord::Middleware::DatabaseSelector::Resolver
+    config.active_record.database_resolver_context = ActiveRecord::Middleware::DatabaseSelector::Resolver::Session
+  end
+end
+```
+
+#### Strategy 2: Feature Flag Routing (Gradual Rollout)
+
+Route users to new system based on feature flag (cookie or user ID hash):
+
+**File: `app/controllers/application_controller.rb`**
+```ruby
+class ApplicationController < ActionController::Base
+  # Check if user should use new frontend
+  def use_new_frontend?
+    return false unless current_user
+
+    # Option 1: Cookie-based flag (manual opt-in for testing)
+    return true if cookies[:use_new_frontend] == 'true'
+
+    # Option 2: Percentage-based rollout (10% of users)
+    user_hash = Digest::MD5.hexdigest(current_user.id.to_s).to_i(16)
+    percentage = user_hash % 100
+    percentage < 10  # 10% of users
+
+    # Option 3: User list (specific users for beta testing)
+    # return true if current_user.id.in?([1, 2, 3, 4, 5])
+  end
+
+  before_action :redirect_to_new_frontend, if: :use_new_frontend?
+
+  private
+
+  def redirect_to_new_frontend
+    # Redirect to new React app if accessing old routes
+    if request.path.start_with?('/') && !request.path.start_with?('/api')
+      redirect_to "http://localhost:3001/app#{request.path}", allow_other_host: true
+    end
+  end
+end
+```
+
+**Traefik Configuration with Feature Flag:**
+
+**File: `docker-compose.yml` (updated)**
+```yaml
+services:
+  traefik:
+    image: traefik:v2.10
+    command:
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--api.dashboard=true"
+      - "--api.insecure=true"
+    # Add middleware for feature flag routing
+    labels:
+      - "traefik.http.middlewares.redirect-new.redirectregex.regex=^http://localhost/(?!api|app).*"
+      - "traefik.http.middlewares.redirect-new.redirectregex.replacement=http://localhost/app$${1}"
+      - "traefik.http.middlewares.redirect-new.redirectregex.permanent=false"
+```
+
+#### Strategy 3: Subdomain Routing
+
+Use different subdomains for old and new systems:
+
+- `app.microblog.local` → Old monolith
+- `api.microblog.local` → New API
+- `microblog.local` → New React frontend
+
+**File: `docker-compose.yml`**
+```yaml
+services:
+  web_old:
+    labels:
+      - "traefik.http.routers.web_old.rule=Host(`app.localhost`)"
+      - "traefik.http.routers.web_old.entrypoints=web"
+
+  api:
+    labels:
+      - "traefik.http.routers.api.rule=Host(`api.localhost`) || Host(`localhost`) && PathPrefix(`/api`)"
+
+  frontend:
+    labels:
+      - "traefik.http.routers.frontend.rule=Host(`localhost`)"
+```
+
+#### How Both Systems Share the Database
+
+**Key Point:** Both systems use the **same PostgreSQL database**, so:
+
+1. **Data Consistency:** Posts created in old system are immediately visible in new system
+2. **User Sessions:**
+   - Old system: Uses `session[:user_id]` (cookie-based)
+   - New system: Uses JWT tokens
+   - **Solution:** Implement dual authentication (see below)
+
+**Dual Authentication Support:**
+
+**File: `app/controllers/api/v1/base_controller.rb`**
+```ruby
+module Api
+  module V1
+    class BaseController < ActionController::API
+      before_action :authenticate_user
+
+      private
+
+      def current_user
+        @current_user ||= begin
+          # Try JWT token first (new system)
+          token = extract_jwt_token
+          if token
+            payload = JwtService.decode(token)
+            return User.find_by(id: payload[:user_id]) if payload
+          end
+
+          # Fallback to session (old system compatibility)
+          # This allows users logged in via old system to access API
+          if session[:user_id]
+            return User.find_by(id: session[:user_id])
+          end
+
+          nil
+        end
+      end
+
+      def extract_jwt_token
+        auth_header = request.headers['Authorization']
+        if auth_header && auth_header.start_with?('Bearer ')
+          return auth_header.split(' ').last
+        end
+        cookies[:jwt_token]
+      end
+    end
+  end
+end
+```
+
+#### Running Both Systems
+
+**Start both systems:**
+```bash
+# Start all services
+docker compose -f docker-compose.parallel.yml up -d
+
+# Or start individually
+docker compose -f docker-compose.parallel.yml up -d db
+docker compose -f docker-compose.parallel.yml up -d web_old
+docker compose -f docker-compose.parallel.yml up -d api
+docker compose -f docker-compose.parallel.yml up -d frontend
+docker compose -f docker-compose.parallel.yml up -d traefik
+```
+
+**Access points:**
+- Old system: `http://localhost/` (ERB views)
+- New API: `http://localhost/api/v1/posts`
+- New frontend: `http://localhost:3001/app` (direct) or `http://localhost/app` (via Traefik)
+
+#### Monitoring Both Systems
+
+**1. Health Checks:**
+
+```bash
+# Old system health
+curl http://localhost/up
+
+# New API health
+curl http://localhost/api/v1/up
+
+# Frontend (check if server responds)
+curl http://localhost:3001
+```
+
+**2. Logs:**
+
+```bash
+# Old system logs
+docker compose -f docker-compose.parallel.yml logs -f web_old
+
+# New API logs
+docker compose -f docker-compose.parallel.yml logs -f api
+
+# Frontend logs
+docker compose -f docker-compose.parallel.yml logs -f frontend
+```
+
+**3. Database Monitoring:**
+
+Both systems write to the same database, so monitor:
+- Total connections (both systems combined)
+- Query performance
+- Lock contention (if any)
+
+```bash
+# Connect to database
+docker compose -f docker-compose.parallel.yml exec db psql -U postgres -d microblog_development
+
+# Check active connections
+SELECT count(*) FROM pg_stat_activity WHERE datname = 'microblog_development';
+```
+
+#### Testing Parallel Run
+
+**1. Create post in old system:**
+```bash
+# Login via old system
+curl -X POST http://localhost/login \
+  -d "username=alice&password=password" \
+  -c cookies.txt
+
+# Create post
+curl -X POST http://localhost/posts \
+  -b cookies.txt \
+  -d "post[content]=Hello from old system"
+```
+
+**2. Verify in new API:**
+```bash
+# Get posts via new API
+curl http://localhost/api/v1/posts \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+**3. Verify in new frontend:**
+- Open `http://localhost:3001/app`
+- Check if post appears
+
+#### Common Issues and Solutions
+
+**Issue 1: CORS Errors**
+- **Problem:** Frontend can't call API due to CORS
+- **Solution:** Ensure CORS is configured in API (see `config/application.rb` above)
+
+**Issue 2: Session Conflicts**
+- **Problem:** Old system uses cookies, new system uses JWT
+- **Solution:** Use different cookie names or implement dual auth (see above)
+
+**Issue 3: Port Conflicts**
+- **Problem:** Both systems try to use port 3000
+- **Solution:** Use different ports (old: 3000, API: 3002, frontend: 3001)
+
+**Issue 4: Database Locking**
+- **Problem:** Both systems writing simultaneously
+- **Solution:** PostgreSQL handles concurrent writes well; monitor for deadlocks
+
+---
 
 ### Phase 2: Gradual Migration (Week 5-6)
 
-- Migrate 10% of users to new system
-- Monitor performance and errors
-- Gradually increase to 100%
+**Goal:** Gradually migrate users from old to new system
+
+#### Step 1: Internal Testing (10% of users)
+
+**Feature Flag Implementation:**
+
+**File: `app/models/concerns/migration_feature_flag.rb`**
+```ruby
+module MigrationFeatureFlag
+  extend ActiveSupport::Concern
+
+  def should_use_new_frontend?
+    # Check cookie first (for manual testing)
+    return true if cookies[:use_new_frontend] == 'true'
+    return false if cookies[:use_new_frontend] == 'false'
+
+    # Check user ID hash (10% of users)
+    user_hash = Digest::MD5.hexdigest(id.to_s).to_i(16)
+    percentage = user_hash % 100
+    percentage < 10
+  end
+end
+```
+
+**File: `app/models/user.rb`**
+```ruby
+class User < ApplicationRecord
+  include MigrationFeatureFlag
+  # ...
+end
+```
+
+**Update routing:**
+```ruby
+# In old system controller
+before_action :redirect_to_new_frontend, if: :should_use_new_frontend?
+
+def should_use_new_frontend?
+  current_user&.should_use_new_frontend?
+end
+
+def redirect_to_new_frontend
+  redirect_to "http://localhost:3001/app#{request.path}", allow_other_host: true
+end
+```
+
+#### Step 2: Monitor and Adjust
+
+**Metrics to track:**
+- Error rates in both systems
+- Response times
+- User feedback
+- Database performance
+
+**Gradually increase percentage:**
+```ruby
+# Week 5: 10% → 25%
+percentage < 25
+
+# Week 6: 25% → 50%
+percentage < 50
+
+# Week 6 end: 50% → 100%
+percentage < 100
+```
+
+---
 
 ### Phase 3: Cutover (Week 7)
 
-- All traffic routed to new system
-- Old system kept as backup
-- Monitor for 1 week
+**Goal:** Route all traffic to new system
+
+**1. Update Traefik routing:**
+```yaml
+# Remove old system routing
+# web_old service can be stopped or removed
+
+# All traffic goes to new system
+frontend:
+  labels:
+    - "traefik.http.routers.frontend.rule=Host(`localhost`)"
+```
+
+**2. Keep old system as backup:**
+- Don't delete old system yet
+- Keep it running but not receiving traffic
+- Can be quickly re-enabled if issues arise
+
+**3. Monitor for 1 week:**
+- Watch error rates
+- Monitor performance
+- Collect user feedback
+
+---
 
 ### Phase 4: Cleanup (Week 8)
 
-- Remove old routes and controllers
-- Remove old views
-- Clean up unused code
-- Update documentation
+**Goal:** Remove old system code
+
+**1. Remove old routes:**
+```ruby
+# config/routes.rb
+# Remove old MVC routes
+# Keep only API routes
+```
+
+**2. Remove old controllers:**
+```bash
+# Remove old controllers (keep API controllers)
+rm app/controllers/posts_controller.rb
+rm app/controllers/users_controller.rb
+# Keep app/controllers/api/v1/*
+```
+
+**3. Remove old views:**
+```bash
+rm -rf app/views/posts
+rm -rf app/views/users
+rm -rf app/views/sessions
+```
+
+**4. Update Docker Compose:**
+```yaml
+# Remove web_old service
+# Keep only api, frontend, db, traefik
+```
+
+**5. Update application config:**
+```ruby
+# config/application.rb
+# Always enable API mode
+config.api_only = true
+```
 
 ---
 
@@ -2170,6 +2730,794 @@ CABLE_DB_PASSWORD=cable_password
 
 ---
 
+## Production Deployment to DigitalOcean VPS
+
+This section explains how to deploy the three-layer architecture to DigitalOcean VPS using **Kamal** for the Rails API, and how each layer connects to each other.
+
+### Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    DigitalOcean VPS                          │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │  Load Balancer / Reverse Proxy (Traefik)              │  │
+│  │  - Port 80/443                                        │  │
+│  │  - SSL/TLS termination                                │  │
+│  │  - Routes: api.example.com → API, www.example.com → Frontend │
+│  └──────────────────────────────────────────────────────┘  │
+│                          ↓                                   │
+│        ┌─────────────────┴─────────────────┐               │
+│        ↓                                     ↓               │
+│  ┌──────────────┐                    ┌──────────────┐      │
+│  │ Rails API    │                    │ React        │      │
+│  │ (Kamal)      │                    │ Frontend      │      │
+│  │ Port: 3000   │                    │ (Nginx)      │      │
+│  │              │                    │ Port: 80     │      │
+│  └──────┬───────┘                    └──────────────┘      │
+│         ↓                                                    │
+│  ┌──────────────┐                                           │
+│  │ PostgreSQL   │                                           │
+│  │ (Managed DB) │                                           │
+│  │ or           │                                           │
+│  │ (Container)  │                                           │
+│  └──────────────┘                                           │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Prerequisites
+
+1. **DigitalOcean Account**
+2. **Droplet (VPS)**: Recommended specs:
+   - **Basic**: 2GB RAM, 1 vCPU (for small apps)
+   - **Recommended**: 4GB RAM, 2 vCPU (for production)
+   - **High Traffic**: 8GB RAM, 4 vCPU (for scaling)
+3. **Domain Name**: Pointed to your Droplet IP
+4. **SSH Access**: Key-based authentication configured
+5. **Docker**: Installed on Droplet (Kamal handles this)
+
+### Step 1: DigitalOcean Setup
+
+#### 1.1 Create Droplet
+
+1. **Go to DigitalOcean Dashboard** → Create → Droplets
+2. **Choose Image**: Ubuntu 22.04 LTS
+3. **Choose Plan**: Basic (2GB RAM, 1 vCPU minimum)
+4. **Add SSH Keys**: Your public SSH key
+5. **Create Droplet**
+6. **Note the IP Address**: e.g., `157.230.45.123`
+
+#### 1.2 Configure DNS
+
+Point your domain to the Droplet:
+
+```
+A Record:  api.example.com  →  157.230.45.123
+A Record:  www.example.com   →  157.230.45.123
+A Record:  example.com      →  157.230.45.123
+```
+
+#### 1.3 SSH Setup
+
+```bash
+# Test SSH connection
+ssh root@157.230.45.123
+
+# Or with specific key
+ssh -i ~/.ssh/your_key root@157.230.45.123
+```
+
+---
+
+### Step 2: Database Setup
+
+#### Option A: DigitalOcean Managed Database (Recommended)
+
+**Pros:**
+- Automatic backups
+- High availability
+- Managed updates
+- Monitoring included
+
+**Setup:**
+1. DigitalOcean Dashboard → Databases → Create Database
+2. Choose PostgreSQL 16
+3. Choose region (same as Droplet)
+4. Note connection details:
+   - Host: `your-db-do-user-123456.db.ondigitalocean.com`
+   - Port: `25060`
+   - Database: `defaultdb`
+   - Username: `doadmin`
+   - Password: (from DigitalOcean)
+
+#### Option B: PostgreSQL Container (Kamal Accessory)
+
+**Pros:**
+- Full control
+- Lower cost (no separate service)
+- Good for development/small apps
+
+**Setup via Kamal:**
+```yaml
+# config/deploy.yml
+accessories:
+  db:
+    image: postgres:16
+    host: 157.230.45.123  # Same server or separate
+    port: "127.0.0.1:5432:5432"  # Internal only
+    env:
+      clear:
+        POSTGRES_DB: microblog_production
+      secret:
+        - POSTGRES_PASSWORD
+    directories:
+      - data:/var/lib/postgresql/data
+```
+
+---
+
+### Step 3: Rails API Deployment with Kamal
+
+#### 3.1 Configure Kamal
+
+**File: `config/deploy.yml`**
+```yaml
+# Name of your application
+service: microblog-api
+
+# Container image name
+image: your-dockerhub-username/microblog-api
+
+# Deploy to DigitalOcean Droplet
+servers:
+  web:
+    - 157.230.45.123  # Your Droplet IP
+
+# Docker registry (where to push images)
+registry:
+  server: docker.io
+  username: your-dockerhub-username
+  password:
+    - KAMAL_REGISTRY_PASSWORD
+
+# Environment variables
+env:
+  secret:
+    - RAILS_MASTER_KEY
+    - DATABASE_URL
+    - SECRET_KEY_BASE
+  clear:
+    RAILS_ENV: production
+    DATABASE_URL: postgresql://doadmin:PASSWORD@your-db-do-user-123456.db.ondigitalocean.com:25060/defaultdb?sslmode=require
+    FRONTEND_URL: https://www.example.com
+    # Solid services
+    SOLID_QUEUE_IN_PUMA: true
+    WEB_CONCURRENCY: 2
+    JOB_CONCURRENCY: 2
+
+# SSL/HTTPS configuration
+proxy:
+  ssl: true
+  host: api.example.com
+  cert_manager:
+    provider: letsencrypt
+    email: your-email@example.com
+
+# Persistent volumes
+volumes:
+  - "microblog_storage:/rails/storage"
+
+# SSH configuration
+ssh:
+  user: root
+  keys:
+    - ~/.ssh/your_key
+
+# Health check
+healthcheck:
+  path: /up
+  port: 3000
+  max_attempts: 3
+  interval: 10s
+```
+
+#### 3.2 Configure Secrets
+
+**File: `.kamal/secrets`**
+```bash
+#!/bin/bash
+
+# Docker Hub password
+KAMAL_REGISTRY_PASSWORD=$DOCKERHUB_PASSWORD
+
+# Rails master key (from config/master.key)
+RAILS_MASTER_KEY=$(cat config/master.key)
+
+# Generate secret key base
+SECRET_KEY_BASE=$(openssl rand -hex 64)
+
+# Database URL (for DigitalOcean Managed DB)
+DATABASE_URL=postgresql://doadmin:YOUR_PASSWORD@your-db-do-user-123456.db.ondigitalocean.com:25060/defaultdb?sslmode=require
+```
+
+**Make executable:**
+```bash
+chmod +x .kamal/secrets
+```
+
+#### 3.3 Configure Production Environment
+
+**File: `config/environments/production.rb`**
+```ruby
+Rails.application.configure do
+  # Force SSL
+  config.force_ssl = true
+  config.assume_ssl = true
+
+  # API mode
+  config.api_only = true
+
+  # CORS for frontend
+  config.middleware.insert_before 0, Rack::Cors do
+    allow do
+      origins ENV['FRONTEND_URL'] || 'https://www.example.com'
+      resource '*',
+        headers: :any,
+        methods: [:get, :post, :put, :patch, :delete, :options, :head],
+        credentials: true
+    end
+  end
+
+  # Database
+  config.active_record.database_selector = { delay: 2.seconds }
+  config.active_record.database_resolver = ActiveRecord::Middleware::DatabaseSelector::Resolver
+
+  # Logging
+  config.log_level = :info
+  config.log_formatter = ::Logger::Formatter.new
+end
+```
+
+#### 3.4 Deploy API
+
+```bash
+# First time setup (creates Kamal directory structure)
+kamal setup
+
+# Build and deploy
+kamal deploy
+
+# Check status
+kamal app details
+
+# View logs
+kamal app logs -f
+
+# Access Rails console
+kamal app exec "bin/rails console"
+```
+
+---
+
+### Step 4: Frontend Deployment
+
+#### Option A: Static Files (Nginx on Same VPS)
+
+**Build React App:**
+```bash
+cd frontend
+npm run build
+# Creates dist/ folder with static files
+```
+
+**Deploy to VPS:**
+```bash
+# Copy files to VPS
+scp -r frontend/dist/* root@157.230.45.123:/var/www/microblog-frontend/
+
+# Or use rsync
+rsync -avz frontend/dist/ root@157.230.45.123:/var/www/microblog-frontend/
+```
+
+**Configure Nginx:**
+
+**File: `/etc/nginx/sites-available/microblog`**
+```nginx
+server {
+    listen 80;
+    server_name www.example.com example.com;
+
+    # Redirect HTTP to HTTPS
+    return 301 https://$server_name$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name www.example.com example.com;
+
+    # SSL certificates (Let's Encrypt)
+    ssl_certificate /etc/letsencrypt/live/www.example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/www.example.com/privkey.pem;
+
+    # Frontend files
+    root /var/www/microblog-frontend;
+    index index.html;
+
+    # Gzip compression
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_types text/plain text/css text/xml text/javascript application/x-javascript application/xml+rss application/json application/javascript;
+
+    # Serve static files
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # Cache static assets
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # Proxy API requests to Rails API
+    location /api {
+        proxy_pass https://api.example.com;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+```
+
+**Enable site:**
+```bash
+# On VPS
+ln -s /etc/nginx/sites-available/microblog /etc/nginx/sites-enabled/
+nginx -t  # Test configuration
+systemctl reload nginx
+```
+
+#### Option B: Frontend Container (Kamal)
+
+**File: `frontend/config/deploy.yml`**
+```yaml
+service: microblog-frontend
+
+image: your-dockerhub-username/microblog-frontend
+
+servers:
+  web:
+    - 157.230.45.123
+
+registry:
+  server: docker.io
+  username: your-dockerhub-username
+  password:
+    - KAMAL_REGISTRY_PASSWORD
+
+proxy:
+  ssl: true
+  host: www.example.com
+
+volumes:
+  - "frontend_storage:/usr/share/nginx/html"
+```
+
+**File: `frontend/Dockerfile`**
+```dockerfile
+# Build stage
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+# Production stage
+FROM nginx:alpine
+COPY --from=builder /app/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
+```
+
+**Deploy:**
+```bash
+cd frontend
+kamal deploy
+```
+
+#### Option C: CDN (Cloudflare Pages, Vercel, Netlify)
+
+**Pros:**
+- Edge caching
+- Global CDN
+- Automatic SSL
+- Free tier
+
+**Setup:**
+1. Connect GitHub repository
+2. Build command: `npm run build`
+3. Output directory: `dist`
+4. Environment variable: `VITE_API_URL=https://api.example.com/api/v1`
+
+---
+
+### Step 5: Service Discovery and Connectivity
+
+#### How Services Connect
+
+**1. Frontend → API:**
+```
+Frontend (Browser)
+  → HTTPS Request to api.example.com
+  → DNS resolves to 157.230.45.123
+  → Traefik (Kamal proxy) receives request
+  → Routes to Rails API container (port 3000)
+  → API processes request
+  → Returns JSON response
+```
+
+**2. API → Database:**
+```
+Rails API Container
+  → Reads DATABASE_URL from environment
+  → Connects to PostgreSQL:
+     - Managed DB: your-db-do-user-123456.db.ondigitalocean.com:25060
+     - Container DB: microblog-db:5432 (via Docker network)
+  → Executes queries
+  → Returns data
+```
+
+**3. Internal Network (Docker):**
+```
+Kamal creates a Docker network for each deployment:
+  - microblog-api_default (for API containers)
+  - microblog-db_default (for database container)
+
+Containers on same network can communicate via service names:
+  - API → DB: postgresql://microblog-db:5432/microblog_production
+```
+
+#### Environment Variables Configuration
+
+**API Service:**
+```yaml
+# config/deploy.yml
+env:
+  clear:
+    DATABASE_URL: postgresql://doadmin:PASSWORD@your-db-do-user-123456.db.ondigitalocean.com:25060/defaultdb?sslmode=require
+    FRONTEND_URL: https://www.example.com
+    RAILS_ENV: production
+```
+
+**Frontend Build:**
+```bash
+# Build with API URL
+VITE_API_URL=https://api.example.com/api/v1 npm run build
+```
+
+**Or in `frontend/.env.production`:**
+```bash
+VITE_API_URL=https://api.example.com/api/v1
+```
+
+---
+
+### Step 6: Complete Deployment Process
+
+#### 6.1 Initial Setup
+
+```bash
+# 1. Clone repository
+git clone https://github.com/yourusername/microblog.git
+cd microblog
+
+# 2. Configure secrets
+cp .kamal/secrets.example .kamal/secrets
+# Edit .kamal/secrets with your values
+chmod +x .kamal/secrets
+
+# 3. Update deploy.yml with your:
+#    - Server IP
+#    - Domain names
+#    - Registry credentials
+#    - Database URL
+
+# 4. Deploy API
+kamal setup
+kamal deploy
+
+# 5. Build and deploy frontend
+cd frontend
+npm install
+npm run build
+# Copy to VPS or deploy via Kamal/CDN
+```
+
+#### 6.2 Continuous Deployment
+
+**GitHub Actions Workflow:**
+
+**File: `.github/workflows/deploy.yml`**
+```yaml
+name: Deploy to Production
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy-api:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.4.7
+
+      - name: Install dependencies
+        run: |
+          gem install kamal
+          bundle install
+
+      - name: Deploy API
+        env:
+          KAMAL_REGISTRY_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
+          RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          kamal deploy
+
+  deploy-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Build frontend
+        working-directory: ./frontend
+        env:
+          VITE_API_URL: https://api.example.com/api/v1
+        run: |
+          npm ci
+          npm run build
+
+      - name: Deploy to VPS
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: root
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "frontend/dist/*"
+          target: "/var/www/microblog-frontend/"
+```
+
+---
+
+### Step 7: Monitoring and Maintenance
+
+#### 7.1 Health Checks
+
+```bash
+# API health
+curl https://api.example.com/up
+
+# Frontend
+curl https://www.example.com
+
+# Database (from API container)
+kamal app exec "bin/rails db:version"
+```
+
+#### 7.2 Logs
+
+```bash
+# API logs
+kamal app logs -f
+
+# Nginx logs (frontend)
+ssh root@157.230.45.123 "tail -f /var/log/nginx/access.log"
+```
+
+#### 7.3 Database Migrations
+
+```bash
+# Run migrations
+kamal app exec "bin/rails db:migrate"
+
+# Or with rollback
+kamal app exec "bin/rails db:rollback"
+```
+
+#### 7.4 Updates and Rollbacks
+
+```bash
+# Deploy new version
+kamal deploy
+
+# Rollback to previous version
+kamal rollback
+
+# Check deployed versions
+kamal app versions
+```
+
+---
+
+### Step 8: Networking Details
+
+#### Port Mapping
+
+```
+External (Internet)          Internal (VPS)
+─────────────────────────────────────────────
+:80  → Traefik (Kamal)  →  :3000 (Rails API)
+:443 → Traefik (Kamal)  →  :3000 (Rails API)
+      → Nginx           →  :80 (Frontend files)
+```
+
+#### Docker Networks
+
+Kamal creates isolated Docker networks:
+
+```bash
+# View networks
+ssh root@157.230.45.123 "docker network ls"
+
+# View containers
+ssh root@157.230.45.123 "docker ps"
+```
+
+#### Firewall Configuration
+
+```bash
+# On VPS
+ufw allow 22/tcp   # SSH
+ufw allow 80/tcp   # HTTP
+ufw allow 443/tcp  # HTTPS
+ufw enable
+```
+
+---
+
+### Step 9: SSL/TLS Setup
+
+#### Automatic (Let's Encrypt via Kamal)
+
+Kamal handles SSL automatically:
+
+```yaml
+# config/deploy.yml
+proxy:
+  ssl: true
+  host: api.example.com
+  cert_manager:
+    provider: letsencrypt
+    email: your-email@example.com
+```
+
+#### Manual (Certbot)
+
+```bash
+# Install Certbot
+apt-get install certbot python3-certbot-nginx
+
+# Get certificate
+certbot --nginx -d www.example.com -d example.com
+
+# Auto-renewal (already configured)
+certbot renew --dry-run
+```
+
+---
+
+### Step 10: Scaling
+
+#### Horizontal Scaling (Multiple Droplets)
+
+```yaml
+# config/deploy.yml
+servers:
+  web:
+    - 157.230.45.123  # Droplet 1
+    - 157.230.45.124  # Droplet 2
+    - 157.230.45.125  # Droplet 3
+```
+
+Kamal automatically:
+- Load balances across servers
+- Deploys to all servers
+- Handles health checks
+
+#### Database Read Replicas
+
+```yaml
+# config/deploy.yml
+accessories:
+  db:
+    # Primary
+    host: 157.230.45.123
+  db_replica:
+    image: postgres:16
+    host: 157.230.45.124  # Separate server
+    # Rails automatically uses for reads
+```
+
+---
+
+### Troubleshooting
+
+#### Issue: API can't connect to database
+
+**Solution:**
+```bash
+# Test connection
+kamal app exec "bin/rails db:version"
+
+# Check DATABASE_URL
+kamal app exec "printenv DATABASE_URL"
+
+# Verify database is accessible
+kamal app exec "nc -zv your-db-host 25060"
+```
+
+#### Issue: Frontend can't reach API (CORS)
+
+**Solution:**
+```ruby
+# config/environments/production.rb
+config.middleware.insert_before 0, Rack::Cors do
+  allow do
+    origins ENV['FRONTEND_URL'] || 'https://www.example.com'
+    resource '*',
+      headers: :any,
+      methods: [:get, :post, :put, :patch, :delete, :options, :head],
+      credentials: true
+  end
+end
+```
+
+#### Issue: SSL certificate not working
+
+**Solution:**
+```bash
+# Check certificate
+kamal app details
+
+# Regenerate certificate
+kamal app exec "certbot renew --force-renewal"
+```
+
+---
+
+### Cost Estimation (DigitalOcean)
+
+**Monthly Costs:**
+
+- **Droplet (4GB RAM, 2 vCPU)**: ~$24/month
+- **Managed PostgreSQL (1GB)**: ~$15/month
+- **Domain**: ~$12/year (~$1/month)
+- **Total**: ~$40/month
+
+**Scaling:**
+- **2 Droplets**: ~$48/month
+- **3 Droplets**: ~$72/month
+- **Load Balancer**: +$12/month (optional)
+
+---
+
 ## References
 
 - [Rails API Mode Guide](https://guides.rubyonrails.org/api_app.html)
@@ -2177,6 +3525,8 @@ CABLE_DB_PASSWORD=cable_password
 - [React Documentation](https://react.dev/)
 - [Docker Compose Documentation](https://docs.docker.com/compose/)
 - [Traefik Documentation](https://doc.traefik.io/traefik/)
+- [Kamal Documentation](https://kamal-deploy.org/)
+- [DigitalOcean Documentation](https://docs.digitalocean.com/)
 
 ---
 
