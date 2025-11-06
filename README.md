@@ -2,6 +2,9 @@
 
 A high-performance microblogging platform built with Ruby on Rails, designed to handle millions of users and posts. Think Twitter/X but optimized for scale.
 
+**Repository**: [https://github.com/Davidslv/microblog](https://github.com/Davidslv/microblog)
+**Frontend Application**: [https://github.com/Davidslv/microblog-frontend](https://github.com/Davidslv/microblog-frontend)
+
 ## 📋 Table of Contents
 
 - [About](#about)
@@ -59,27 +62,65 @@ The application is optimized for large-scale performance, with proven capabiliti
 
 ## Architecture
 
-### System Overview
+### Three-Layer Architecture
+
+This application follows a **three-layer architecture** with independent frontend, backend, and database layers:
 
 ```
-┌─────────────────────────────────────────────────┐
-│              Rails Application                   │
-│  ┌──────────────┐  ┌──────────────┐            │
-│  │   Puma       │  │  Solid Queue │            │
-│  │  (Web Server)│  │ (Background) │            │
-│  │  25 threads  │  │   Jobs       │            │
-│  └──────┬───────┘  └──────┬───────┘            │
-└─────────┼──────────────────┼────────────────────┘
-          │                  │
-          │ (25 connections) │
-          │                  │
-┌─────────▼──────────────────▼────────────────────┐
-│              PostgreSQL                          │
-│         (Primary Database)                       │
-│  - Users, Posts, Follows                         │
-│  - Counter caches                                │
-└──────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│              PRESENTATION LAYER                             │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │  React SPA (Frontend)                                  │  │
+│  │  Repository: github.com/Davidslv/microblog-frontend    │  │
+│  │  - React Components                                    │  │
+│  │  - JWT Authentication                                  │  │
+│  │  - API Client (Axios)                                  │  │
+│  └──────────────────────────────────────────────────────┘  │
+└───────────────────────────────────────┼──────────────────────┘
+                                        │ HTTP/REST
+                                        │ JWT Token
+┌───────────────────────────────────────┼──────────────────────┐
+│         APPLICATION LAYER (This App)  │                      │
+│  ┌───────────────────────────────────▼──────────────────┐  │
+│  │  Rails API (Port 3000)                               │  │
+│  │  ┌──────────────┐  ┌──────────────┐                  │  │
+│  │  │   Puma       │  │  Solid Queue │                  │  │
+│  │  │  (Web Server)│  │ (Background) │                  │  │
+│  │  │  25 threads  │  │   Jobs       │                  │  │
+│  │  └──────┬───────┘  └──────┬───────┘                  │  │
+│  │  - /api/v1/* endpoints                                │  │
+│  │  - JWT Authentication                                  │  │
+│  │  - JSON responses                                      │  │
+│  └─────────┼──────────────────┼──────────────────────────┘  │
+└────────────┼──────────────────┼────────────────────────────┘
+             │                  │
+             │ (25 connections) │
+             │                  │
+┌────────────▼──────────────────▼────────────────────────────┐
+│              DATA LAYER                                     │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │  PostgreSQL (Primary Database)                      │  │
+│  │  - Users, Posts, Follows                             │  │
+│  │  - Counter caches                                    │  │
+│  │  - Feed entries (fan-out)                            │  │
+│  └──────────────────────────────────────────────────────┘  │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │  Solid Cache/Queue/Cable (SQLite)                     │  │
+│  │  - Background jobs                                    │  │
+│  │  - Cache storage                                      │  │
+│  │  - WebSocket connections                              │  │
+│  └──────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
 ```
+
+**Key Benefits:**
+- **Independent Scaling**: Scale frontend (CDN) and backend (API servers) independently
+- **Technology Evolution**: Frontend and backend can evolve independently
+- **Team Autonomy**: Frontend and backend teams work independently with clear API contracts
+- **Faster Iteration**: Frontend changes don't require backend deploys
+- **Cost Optimization**: Scale expensive components (backend) separately from cheap ones (static frontend)
+
+**📚 See [Three-Layer Architecture Implementation](docs/048_THREE_LAYER_ARCHITECTURE_IMPLEMENTATION.md) for detailed documentation.**
 
 ### Data Model
 
@@ -97,9 +138,27 @@ See [Database Diagram](docs/001_DATABASE_DIAGRAM.md) for detailed schema.
 
 ### Request Flow
 
+**API Request (from React Frontend):**
 ```
-User Request
+React Frontend
+    ↓ HTTP/REST + JWT Token
+Rails API Controller (/api/v1/*)
     ↓
+JWT Authentication Middleware
+    ↓
+ActiveRecord Query (optimized)
+    ↓
+PostgreSQL
+    ↓
+JSON Response
+    ↓
+React Frontend (renders UI)
+```
+
+**HTML Request (legacy/development):**
+```
+Browser
+    ↓ HTTP
 Puma (25 threads)
     ↓
 Rails Controller
@@ -108,7 +167,7 @@ ActiveRecord Query (optimized)
     ↓
 PostgreSQL
     ↓
-Response (JSON/HTML)
+HTML Response (ERB templates)
 ```
 
 ---
@@ -122,10 +181,19 @@ Response (JSON/HTML)
 - **Web Server**: Puma (25 threads)
 - **Background Jobs**: Solid Queue (Rails 8 built-in)
 
-### Frontend
+### Frontend (Separate Repository)
+- **Framework**: React 18+ with Vite
+- **Routing**: React Router DOM
+- **HTTP Client**: Axios
+- **Styling**: Tailwind CSS
+- **Testing**: Vitest (unit), Playwright (E2E)
+- **Repository**: [https://github.com/Davidslv/microblog-frontend](https://github.com/Davidslv/microblog-frontend)
+
+### Legacy Frontend (This Repository)
 - **CSS Framework**: Tailwind CSS
 - **JavaScript**: Hotwire (Turbo + Stimulus)
 - **Asset Pipeline**: Propshaft
+- **Note**: Legacy HTML views are still available but the primary frontend is the React SPA
 
 ### Testing
 - **Framework**: RSpec
@@ -225,9 +293,11 @@ sudo apt-get install -y nodejs
 ### 1. Clone the Repository
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/Davidslv/microblog.git
 cd microblog
 ```
+
+**Note:** For the frontend application, see the [frontend repository](https://github.com/Davidslv/microblog-frontend).
 
 ### Choose Your Installation Method
 
@@ -433,6 +503,7 @@ user1.follow(user2)
 
 ### Quick Login (Development Only)
 
+**For HTML Views (Legacy):**
 For development, use the temporary login route:
 
 **With Docker:**
@@ -448,6 +519,9 @@ For development, use the temporary login route:
 ```
 
 This sets the session to log you in as that user.
+
+**For React Frontend:**
+Use the login page at `http://localhost:5173/login` (or your frontend URL). The frontend uses JWT token-based authentication via the `/api/v1/login` endpoint.
 
 ### Production Mode
 
@@ -512,9 +586,15 @@ All documentation is located in the `docs/` directory, organized chronologically
 
 ### Quick Start Guide
 - [Development Guide](docs/002_DEVELOPMENT.md) - Setup and development workflow
-- [Docker Workflow Guide](docs/039_DOCKER_WORKFLOW.md) - **NEW** Complete Docker guide for newcomers
+- [Docker Workflow Guide](docs/039_DOCKER_WORKFLOW.md) - Complete Docker guide for newcomers
 - [Docker Compose Configuration](docs/038_DOCKER_COMPOSE_CONFIGURATION.md) - Docker setup details
 - [Database Diagram](docs/001_DATABASE_DIAGRAM.md) - Schema and relationships
+- [Deployment Guide](docs/055_DEPLOYMENT_GUIDE.md) - Production deployment with Kamal
+
+### Architecture & Design
+- [Three-Layer Architecture](docs/048_THREE_LAYER_ARCHITECTURE_IMPLEMENTATION.md) - **IMPORTANT** Architecture overview
+- [JWT Authentication](docs/053_PHASE_2_JWT_AUTHENTICATION.md) - JWT implementation details
+- [Frontend Setup](docs/054_PHASE_3_FRONTEND_SETUP.md) - React frontend integration
 
 ### Performance & Optimization
 - [Performance Analysis](docs/004_PERFORMANCE_ANALYSIS.md) - Initial analysis
@@ -748,11 +828,38 @@ rails db:migrate:status
 
 ---
 
+## API Endpoints
+
+The backend provides RESTful JSON API endpoints under `/api/v1/*`:
+
+### Authentication
+- `POST /api/v1/login` - User login (returns JWT token)
+- `POST /api/v1/refresh` - Refresh JWT token
+- `DELETE /api/v1/logout` - User logout
+- `GET /api/v1/me` - Get current user
+
+### Posts
+- `GET /api/v1/posts` - Get posts feed (query params: `filter`, `cursor`)
+- `POST /api/v1/posts` - Create post
+- `GET /api/v1/posts/:id` - Get post detail with replies
+
+### Users
+- `GET /api/v1/users/:id` - Get user profile
+- `PATCH /api/v1/users/:id` - Update user (description, password)
+- `DELETE /api/v1/users/:id` - Delete user account
+- `POST /api/v1/users/:id/follow` - Follow user
+- `DELETE /api/v1/users/:id/follow` - Unfollow user
+
+**📚 See [Frontend Repository](https://github.com/Davidslv/microblog-frontend) for API client implementation.**
+
+---
+
 ## Support
 
 For questions or issues:
 - Check [Documentation](docs/README.md)
 - Review [Performance Guides](docs/004_PERFORMANCE_ANALYSIS.md)
+- Check [Frontend Repository](https://github.com/Davidslv/microblog-frontend) for frontend-related issues
 - Contact the team
 
 ---
