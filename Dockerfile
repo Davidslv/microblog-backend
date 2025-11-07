@@ -51,7 +51,8 @@ COPY . .
 RUN bundle exec bootsnap precompile -j 1 app/ lib/
 
 # Precompiling assets for production without requiring secret RAILS_MASTER_KEY
-RUN SECRET_KEY_BASE_DUMMY=1 ./bin/rails assets:precompile
+# DATABASE_URL is not needed for asset precompilation, but Rails tries to load database.yml
+RUN SECRET_KEY_BASE_DUMMY=1 DATABASE_URL=postgresql://dummy:dummy@localhost/dummy ./bin/rails assets:precompile
 
 
 
