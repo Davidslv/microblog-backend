@@ -66,16 +66,19 @@ env:
     DATABASE_USERNAME: doadmin
     DATABASE_PASSWORD: <database-password-from-secrets>
     
-    # Cache, queue, and cable databases use the same host/port but may need separate credentials
-    # For now, using same password as primary database
+    # Cache, queue, and cable databases use the same host/port and credentials as primary
+    # Using doadmin user for all databases (can create separate users later if needed)
     CACHE_DB_HOST: private-db-postgresql-lon1-11936-do-user-28554529-0.j.db.ondigitalocean.com
     CACHE_DB_PORT: 25060
+    CACHE_DB_USERNAME: doadmin
     CACHE_DB_PASSWORD: <database-password-from-secrets>
     QUEUE_DB_HOST: private-db-postgresql-lon1-11936-do-user-28554529-0.j.db.ondigitalocean.com
     QUEUE_DB_PORT: 25060
+    QUEUE_DB_USERNAME: doadmin
     QUEUE_DB_PASSWORD: <database-password-from-secrets>
     CABLE_DB_HOST: private-db-postgresql-lon1-11936-do-user-28554529-0.j.db.ondigitalocean.com
     CABLE_DB_PORT: 25060
+    CABLE_DB_USERNAME: doadmin
     CABLE_DB_PASSWORD: <database-password-from-secrets>
 
     # Log everything from Rails
