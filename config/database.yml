@@ -134,11 +134,15 @@ test:
 production:
   primary:
     <<: *default
+    <% if ENV["DATABASE_URL"] %>
+    url: <%= ENV["DATABASE_URL"] %>
+    <% else %>
     database: microblog_production
     username: <%= ENV.fetch("DATABASE_USERNAME") { "microblog" } %>
     password: <%= ENV.fetch("DATABASE_PASSWORD") { "" } %>
     host: <%= ENV.fetch("DATABASE_HOST") { "localhost" } %>
     port: <%= ENV.fetch("DATABASE_PORT") { 5432 } %>
+    <% end %>
 
   # Read replica configuration
   # In production, this should point to a replica server
