@@ -3,12 +3,15 @@ class Post < ApplicationRecord
   belongs_to :parent, class_name: "Post", optional: true
   has_many :replies, class_name: "Post", foreign_key: "parent_id", dependent: :nullify
   has_many :feed_entries, dependent: :delete_all # Fan-out entries are deleted when post is deleted
+  has_many :reports, dependent: :destroy
 
   validates :content, presence: true, length: { maximum: 200 }
 
   scope :timeline, -> { order(created_at: :desc) }
   scope :top_level, -> { where(parent_id: nil) }
   scope :replies, -> { where.not(parent_id: nil) }
+  scope :not_redacted, -> { where(redacted: false) }
+  scope :redacted, -> { where(redacted: true) }
 
   # Fan-out on write: Create feed entries for all followers when post is created
   # This enables fast feed queries (5-20ms vs 50-200ms)
@@ -24,6 +27,14 @@ class Post < ApplicationRecord
 
   def author_name
     author&.username || "Deleted User"
+  end
+
+  def redacted?
+    redacted
+  end
+
+  def report_count
+    reports.count
   end
 
   private

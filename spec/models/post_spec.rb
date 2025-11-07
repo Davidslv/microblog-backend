@@ -163,4 +163,64 @@ RSpec.describe Post, type: :model do
       }.to change { FeedEntry.where(post_id: post.id).count }.by(-1)
     end
   end
+
+  describe 'redaction' do
+    let(:post) { create(:post) }
+
+    describe '#redacted?' do
+      it 'returns false for non-redacted posts' do
+        expect(post.redacted?).to be false
+      end
+
+      it 'returns true for redacted posts' do
+        post.update(redacted: true, redacted_at: Time.current, redaction_reason: 'auto')
+        expect(post.redacted?).to be true
+      end
+    end
+
+    describe '#report_count' do
+      it 'returns 0 for posts with no reports' do
+        expect(post.report_count).to eq(0)
+      end
+
+      it 'returns the correct count of reports' do
+        create_list(:report, 3, post: post)
+        expect(post.report_count).to eq(3)
+      end
+    end
+
+    describe 'scopes' do
+      let!(:redacted_post) { create(:post, redacted: true, redacted_at: Time.current) }
+      let!(:normal_post) { create(:post, redacted: false) }
+
+      describe '.not_redacted' do
+        it 'returns only non-redacted posts' do
+          expect(Post.not_redacted).to include(normal_post)
+          expect(Post.not_redacted).not_to include(redacted_post)
+        end
+      end
+
+      describe '.redacted' do
+        it 'returns only redacted posts' do
+          expect(Post.redacted).to include(redacted_post)
+          expect(Post.redacted).not_to include(normal_post)
+        end
+      end
+    end
+
+    describe 'associations' do
+      it 'has many reports' do
+        expect(Post.reflect_on_association(:reports)).to be_present
+      end
+
+      it 'destroys reports when post is destroyed' do
+        post = create(:post)
+        create_list(:report, 2, post: post)
+
+        expect {
+          post.destroy
+        }.to change { Report.count }.by(-2)
+      end
+    end
+  end
 end

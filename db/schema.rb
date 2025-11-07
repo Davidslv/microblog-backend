@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_04_140714) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_07_235001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_stat_statements"
@@ -41,11 +41,28 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_04_140714) do
     t.string "content", limit: 200, null: false
     t.datetime "created_at", null: false
     t.integer "parent_id"
+    t.boolean "redacted", default: false, null: false
+    t.datetime "redacted_at"
+    t.string "redaction_reason"
     t.datetime "updated_at", null: false
     t.index ["author_id", "created_at"], name: "index_posts_on_author_id_and_created_at", order: { created_at: :desc }
     t.index ["author_id"], name: "index_posts_on_author_id"
     t.index ["created_at"], name: "index_posts_on_created_at"
     t.index ["parent_id"], name: "index_posts_on_parent_id"
+    t.index ["redacted", "created_at"], name: "index_posts_on_redacted_and_created_at"
+    t.index ["redacted"], name: "index_posts_on_redacted"
+  end
+
+  create_table "reports", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.bigint "post_id", null: false
+    t.bigint "reporter_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["post_id", "created_at"], name: "index_reports_on_post_id_and_created_at"
+    t.index ["post_id", "reporter_id"], name: "index_reports_on_post_and_reporter", unique: true
+    t.index ["post_id"], name: "index_reports_on_post_id"
+    t.index ["reporter_id", "created_at"], name: "index_reports_on_reporter_id_and_created_at"
+    t.index ["reporter_id"], name: "index_reports_on_reporter_id"
   end
 
   create_table "solid_cache_entries", force: :cascade do |t|
@@ -201,6 +218,8 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_04_140714) do
   add_foreign_key "follows", "users", column: "follower_id", on_delete: :cascade
   add_foreign_key "posts", "posts", column: "parent_id", on_delete: :nullify
   add_foreign_key "posts", "users", column: "author_id", on_delete: :nullify
+  add_foreign_key "reports", "posts"
+  add_foreign_key "reports", "users", column: "reporter_id"
   add_foreign_key "solid_queue_blocked_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_claimed_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_failed_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade

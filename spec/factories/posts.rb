@@ -14,6 +14,12 @@ FactoryBot.define do
     trait :top_level do
       parent { nil }
     end
+
+    trait :redacted do
+      redacted { true }
+      redacted_at { Time.current }
+      redaction_reason { 'auto' }
+    end
   end
 end
 
