@@ -1,16 +1,16 @@
 # Name of your application. Used to uniquely configure containers.
 service: microblog
-
+# ubuntu-s-1vcpu-1gb-35gb-intel-lon1-01-microblog-backend
 # Name of the container image (use your-user/app-name on external registries).
-image: microblog
+image: davidslvuk/microblog-backend
 
 # Deploy to these servers.
 servers:
   web:
     hosts:
-      - <%= ENV.fetch("BACKEND_HOST", "api.example.com") %>
-    options:
-      "add-host": host.docker_hostname + ":host-gateway"
+      - <%= ENV.fetch("BACKEND_HOST", "206.189.19.73") %>
+    # options:
+    #   "add-host": host.docker_hostname + ":host-gateway"
   # job:
   #   hosts:
   #     - <%= ENV.fetch("BACKEND_HOST", "api.example.com") %>
@@ -24,7 +24,7 @@ servers:
 # Don't use this when deploying to multiple web servers (then you have to terminate SSL at your load balancer).
 proxy:
   ssl: true
-  host: <%= ENV.fetch("BACKEND_HOST", "api.example.com") %>
+  host: <%= ENV.fetch("BACKEND_HOST", "microblog-be.davidslv.uk") %>
 
 # Where you keep your container images.
 registry:
@@ -32,7 +32,7 @@ registry:
   server: <%= ENV.fetch("DOCKER_REGISTRY", "docker.io") %>
 
   # Needed for authenticated registries.
-  username: <%= ENV.fetch("DOCKER_USERNAME", "") %>
+  username: <%= ENV.fetch("DOCKER_USERNAME", "davidslvuk") %>
 
   # Always use an access token rather than real password when possible.
   password:
@@ -77,24 +77,24 @@ aliases:
 # Use a persistent storage volume for sqlite database files and local Active Storage files.
 # Recommended to change this to a mounted volume path that is backed up off server.
 volumes:
-  - "microblog_storage:/rails/storage"
+  - "volume_lon1_01:/rails/storage"
 
 # Bridge fingerprinted assets, like JS and CSS, between versions to avoid
 # hitting 404 on in-flight requests. Combines all files from new and old
 # version inside the asset_path.
 asset_path: /rails/public/assets
 
-# Health check
-healthcheck:
-  path: /up
-  port: 80
-  max_attempts: 10
-  interval: 10s
+# # Health check
+# healthcheck:
+#   path: /up
+#   port: 80
+#   max_attempts: 10
+#   interval: 10s
 
-# Resource limits
-limits:
-  memory: 2g
-  cpus: 2
+# # Resource limits
+# limits:
+#   memory: 2g
+#   cpus: 2
 
 
 # Configure the image builder.
