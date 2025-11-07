@@ -1,38 +1,38 @@
 # From Monolith to Three-Layer Architecture: A Journey of Architectural Evolution
 
-> **Breaking apart what works: Why we split our Rails monolith into separate repositories and what we learned along the way**
+> **Breaking apart what works: Why I split my Rails monolith into separate repositories and what I learned along the way**
 
 ---
 
 ## A Note on This Educational Project
 
-**Important:** This microblog application was built for **educational purposes** to explore scalability, architecture, and performance optimization. While the application is fully functional and production-ready, we used **load testing with 1 million database records** to validate the architecture—not 1 million real users. The goal is to share learnings and help others understand architectural decisions, trade-offs, and migration strategies.
+**Important:** This microblog application was built for **educational purposes** to explore scalability, architecture, and performance optimization. While the application is fully functional and production-ready, I used **load testing with 1 million database records** to validate the architecture—not 1 million real users. The goal is to share learnings and help others understand architectural decisions, trade-offs, and migration strategies.
 
-We believe in learning by doing, and this project demonstrates real-world patterns that apply to production systems. All metrics, costs, and performance data are based on actual testing and measurements.
+I believe in learning by doing, and this project demonstrates real-world patterns that apply to production systems. All metrics, costs, and performance data are based on actual testing and measurements.
 
 ---
 
 ## The Question That Started It All
 
-After building a scalable microblog that handles 1 million+ database records with load testing, we faced a critical question: **Should we continue as a monolithic Rails application, or break it into separate layers?**
+After building a scalable microblog that handles 1 million+ database records with load testing, I faced a critical question: **Should I continue as a monolithic Rails application, or break it into separate layers?**
 
-The monolith was working. It was fast (5-20ms feed queries), scalable (handling 100+ requests/second), and cost-effective ($8/month). But we saw limitations that would constrain our ability to evolve, scale, and adapt.
+The monolith was working. It was fast (5-20ms feed queries), scalable (handling 100+ requests/second), and cost-effective ($8/month). But I saw limitations that would constrain my ability to evolve, scale, and adapt.
 
-**This is our journey from a single Rails monolith to a three-layer architecture—and why it was worth it.**
+**This is my journey from a single Rails monolith to a three-layer architecture—and why it was worth it.**
 
 ---
 
 ## Table of Contents
 
 1. [The Starting Point: A Working Monolith](#the-starting-point-a-working-monolith)
-2. [The Breaking Point: Why We Needed Change](#the-breaking-point-why-we-needed-change)
+2. [The Breaking Point: Why I Needed Change](#the-breaking-point-why-i-needed-change)
 3. [The Vision: Technology Independence](#the-vision-technology-independence)
 4. [The Migration Journey](#the-migration-journey)
-5. [The Technologies We Chose](#the-technologies-we-chose)
+5. [The Technologies I Chose](#the-technologies-i-chose)
 6. [Team Impact: Better or Worse?](#team-impact-better-or-worse)
 7. [DORA Metrics: Measuring the Impact](#dora-metrics-measuring-the-impact)
 8. [The Cost Reality](#the-cost-reality)
-9. [Benefits: What We Gained](#benefits-what-we-gained)
+9. [Benefits: What I Gained](#benefits-what-i-gained)
 10. [Trade-offs: The Honest Truth](#trade-offs-the-honest-truth)
 11. [Lessons Learned](#lessons-learned)
 12. [When Should You Do This?](#when-should-you-do-this)
@@ -41,7 +41,7 @@ The monolith was working. It was fast (5-20ms feed queries), scalable (handling 
 
 ## The Starting Point: A Working Monolith
 
-Our original system was a **classic Rails monolith**—everything in one codebase, one deployment, one server:
+My original system was a **classic Rails monolith**—everything in one codebase, one deployment, one server:
 
 ```mermaid
 graph TB
@@ -49,7 +49,7 @@ graph TB
     Rails -->|Renders HTML| User
     Rails -->|Queries| DB[(PostgreSQL<br/>Database)]
     Rails -->|Sessions| Session[Session Store]
-    
+
     style Rails fill:#e1f5ff
     style DB fill:#ffebee
     style Session fill:#fff3e0
@@ -70,19 +70,19 @@ graph TB
 
 ---
 
-## The Breaking Point: Why We Needed Change
+## The Breaking Point: Why I Needed Change
 
 ### Five Key Limitations
 
 **1. Technology Lock-In**
-- Locked into Rails for everything
-- Can't experiment with Go/Rust for performance
-- Can't optimize frontend with Next.js for SEO
+- I was locked into Rails for everything
+- Couldn't experiment with Go/Rust for performance
+- Couldn't optimize frontend with Next.js for SEO
 - Would need to rewrite everything to change
 
 **2. Deployment Coupling**
 - Every frontend change = full Rails deployment
-- Merge conflicts between frontend/backend developers
+- In teams: merge conflicts between frontend/backend developers
 - Can't deploy fixes independently
 - Higher risk (every deployment touches everything)
 
@@ -91,7 +91,7 @@ graph TB
 - Can't optimize costs per component
 - Frontend traffic spikes scale backend unnecessarily
 
-**4. Team Bottlenecks**
+**4. Team Bottlenecks** *(in real-world team scenarios)*
 - Max 2-3 developers before coordination overhead
 - Frontend developers block backend developers
 - Deployment dependencies create friction
@@ -114,27 +114,27 @@ graph LR
     subgraph "Year 1"
         M[Rails Monolith]
     end
-    
+
     subgraph "Year 2 - Current"
         R1[Rails API]
         F1[React Frontend]
     end
-    
+
     subgraph "Year 3+ - Future"
         R2[Go/Rust API]
         F2[Next.js Frontend]
     end
-    
+
     subgraph "Foundation"
         DB[(PostgreSQL<br/>Unchanged)]
     end
-    
+
     M --> R1
     R1 --> R2
     F1 --> F2
     R1 --> DB
     R2 --> DB
-    
+
     style DB fill:#ffebee
     style M fill:#e1f5ff
     style R1 fill:#e8f5e9
@@ -146,7 +146,7 @@ graph LR
 - Backend: Rails → Sinatra → Go → Rust → whatever fits performance needs
 - Database: Stable foundation that never changes
 
-**This is why we did it.** Not because the monolith was broken, but because we wanted **architectural freedom** for the future.
+**This is why I did it.** Not because the monolith was broken, but because I wanted **architectural freedom** for the future.
 
 ---
 
@@ -155,24 +155,24 @@ graph LR
 **6-week migration in 6 phases:**
 
 1. **Week 1-2: Rails API Foundation**
-   - Created `/api/v1/*` namespace
+   - I created `/api/v1/*` namespace
    - JSON responses alongside HTML
    - Both systems run in parallel
 
 2. **Week 2-3: JWT Authentication**
-   - Stateless JWT tokens for API
+   - Implemented stateless JWT tokens for API
    - Session fallback for compatibility
 
 3. **Week 3-4: Frontend Setup**
-   - Separate repository: `microblog-frontend`
-   - React SPA with Vite, Tailwind, React Router
+   - Created separate repository: `microblog-frontend`
+   - Built React SPA with Vite, Tailwind, React Router
 
 4. **Week 4-5: Data Flow Integration**
    - Standardized API responses
    - Error handling & pagination
 
 5. **Week 5: Docker Configuration**
-   - Independent containers
+   - Set up independent containers
    - Kamal deployment ready
 
 6. **Week 6: Testing & Migration**
@@ -187,13 +187,13 @@ graph LR
 graph TB
     LB[Load Balancer<br/>Traefik/Nginx] --> Monolith[Old Monolith<br/>Rails MVC<br/>ERB Views<br/>Port: 3000]
     LB --> New[New Architecture]
-    
+
     New --> Frontend[React SPA<br/>Port: 5173]
     New --> API[Rails API<br/>Port: 3000]
-    
+
     Monolith --> DB[(PostgreSQL<br/>Shared Database)]
     API --> DB
-    
+
     style DB fill:#ffebee
     style Monolith fill:#e1f5ff
     style Frontend fill:#e8f5e9
@@ -208,7 +208,7 @@ graph TB
 
 ---
 
-## The Technologies We Chose
+## The Technologies I Chose
 
 ### Three-Layer Architecture
 
@@ -219,26 +219,26 @@ graph TB
         CDN[CDN/Edge<br/>Static Assets]
         FE --> CDN
     end
-    
+
     subgraph "APPLICATION LAYER"
         API[Rails API<br/>JSON Only<br/>JWT Auth]
         LB[Load Balancer<br/>Kamal/Traefik]
         API --> LB
     end
-    
+
     subgraph "DATA LAYER"
         DB[(PostgreSQL<br/>Database)]
         Cache[Solid Cache]
         Queue[Solid Queue]
     end
-    
+
     User[User Browser] -->|HTTPS| CDN
     CDN -->|API Calls<br/>JWT Token| LB
     LB -->|JSON| API
     API -->|SQL Queries| DB
     API -->|Cache| Cache
     API -->|Jobs| Queue
-    
+
     style FE fill:#e8f5e9
     style API fill:#e1f5ff
     style DB fill:#ffebee
@@ -262,6 +262,8 @@ graph TB
 
 ## Team Impact: Better or Worse?
 
+**Note:** While this was a solo project, the three-layer architecture is designed for teams. Here's how it would impact a real-world team scenario.
+
 **Verdict:** Better for teams of 3+ developers. For solo/small teams (1-2), monolith is simpler.
 
 ```mermaid
@@ -271,12 +273,12 @@ graph LR
         M2 -->|Deployment Block| M1
         M3[Max 2-3 Devs]
     end
-    
+
     subgraph "Three-Layer"
         T1[Frontend Team<br/>2-5 Devs] -->|API Contract| T2[Backend Team<br/>2-5 Devs]
         T3[Max 4-10 Devs]
     end
-    
+
     style M1 fill:#ffebee
     style M2 fill:#ffebee
     style T1 fill:#e8f5e9
@@ -305,7 +307,7 @@ graph LR
 
 ## DORA Metrics: Measuring the Impact
 
-DORA (DevOps Research and Assessment) metrics measure software delivery performance.
+DORA (DevOps Research and Assessment) metrics measure software delivery performance. While this was a solo project, here's how these metrics would improve in a real-world team scenario:
 
 | Metric | Monolith | Three-Layer | Improvement |
 |--------|----------|-------------|-------------|
@@ -314,13 +316,13 @@ DORA (DevOps Research and Assessment) metrics measure software delivery performa
 | **MTTR** | 15-30 min | 2-10 min | 50-70% faster |
 | **Change Failure Rate** | 5-10% | 2-7% | 30-50% reduction |
 
-**Key Improvements:**
+**Key Improvements in Team Scenarios:**
 - **Frontend deployments:** 5-10/week (vs 2-3 for entire app)
 - **Lead time:** 15-30 min for frontend (vs 2-4 hours)
 - **Recovery:** Independent rollback per layer
 - **Failures:** Smaller scope = fewer things break
 
-**Verdict:** Significant improvement across all metrics. Three-layer architecture enables faster, safer, more frequent deployments.
+**Verdict:** Significant improvement across all metrics. Three-layer architecture enables faster, safer, more frequent deployments in team environments.
 
 ---
 
@@ -335,7 +337,7 @@ graph TB
         M2[Basic PostgreSQL<br/>$2/month]
         M1 --> M2
     end
-    
+
     subgraph "Three-Layer: $28/month"
         T1[Frontend Server<br/>$6/month]
         T2[Backend Server<br/>$6/month]
@@ -344,7 +346,7 @@ graph TB
         T1 --> T3
         T2 --> T3
     end
-    
+
     style M1 fill:#e1f5ff
     style T1 fill:#e8f5e9
     style T2 fill:#e8f5e9
@@ -360,7 +362,7 @@ graph TB
 
 ### Why the Cost Increase?
 
-**Separate Servers ($6 → $12):** Independent scaling and deployment  
+**Separate Servers ($6 → $12):** Independent scaling and deployment
 **Managed Database ($2 → $15):** Automatic backups, HA, better performance
 
 ### Cost Optimization
@@ -380,7 +382,7 @@ graph TB
 
 ---
 
-## Benefits: What We Gained
+## Benefits: What I Gained
 
 ### Key Benefits
 
@@ -463,6 +465,8 @@ graph TB
 
 ## Lessons Learned
 
+Through this journey, I learned several key lessons:
+
 1. **Start with API, not frontend** - Build the API layer first; it's the foundation
 2. **Parallel running is essential** - Don't remove old system until new one is proven
 3. **API contracts are critical** - Well-documented, versioned, stable, tested
@@ -494,7 +498,7 @@ graph TB
 
 **Ask yourself:** Team size (4+)? Multi-platform? Technology flexibility? Performance needs? Budget?
 
-**If 3+ answers are "yes":** → **Do it**  
+**If 3+ answers are "yes":** → **Do it**
 **If 2+ answers are "no":** → **Wait**
 
 ---
@@ -505,7 +509,7 @@ graph TB
 
 - **Time:** 6 weeks
 - **Cost:** $8 → $28/month (3.5x)
-- **Team Size:** 2-3 → 4-10 developers
+- **Team Size Potential:** 2-3 → 4-10 developers (in real teams)
 - **Deployment Frequency:** 2-3 → 7-13/week
 - **Lead Time:** 2-4 hours → 15 min - 2 hours
 - **Performance:** 28% faster API, 82% smaller payloads
@@ -514,9 +518,9 @@ graph TB
 
 **The database is the foundation.** Everything else can evolve around it.
 
-**What We Gained:**
+**What I Gained:**
 - ✅ Technology independence (swap any layer)
-- ✅ Team scalability (4-10 developers)
+- ✅ Team scalability potential (4-10 developers in real teams)
 - ✅ Independent deployment & scaling
 - ✅ Multi-platform support
 - ✅ Better performance
@@ -532,7 +536,7 @@ graph TB
 
 ### The Future
 
-We can now:
+I can now:
 - Swap Rails → Go/Rust (if performance needs it)
 - Swap React → Next.js (if SEO needs it)
 - Add mobile/desktop apps (same API)
@@ -544,7 +548,7 @@ We can now:
 
 **The key is knowing when to do it.** For growing teams needing multi-platform support and technology flexibility, the three-layer architecture is worth it. For solo developers with simple apps and tight budgets, the monolith is probably fine.
 
-The journey from monolith to three-layer architecture is about **architectural freedom** for the future. And for us, that freedom was worth every penny.
+The journey from monolith to three-layer architecture is about **architectural freedom** for the future. And for me, that freedom was worth every penny.
 
 ---
 
