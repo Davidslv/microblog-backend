@@ -56,12 +56,8 @@ env:
     # Set number of cores available to the application on each server (default: 1).
     # WEB_CONCURRENCY: 2
 
-    # Match this to any external database server to configure Active Record correctly
-    # Use microblog-db for a db accessory server on same machine via local kamal docker network.
-    DATABASE_HOST: <%= ENV.fetch("DB_HOST", "localhost") %>
-    DATABASE_PORT: 5432
-    DATABASE_USERNAME: <%= ENV.fetch("DB_USERNAME", "postgres") %>
-    # DATABASE_PASSWORD should be in DATABASE_URL secret
+    # Database connection is configured via DATABASE_URL secret (see .kamal/secrets)
+    # Individual DATABASE_HOST, DATABASE_PORT, DATABASE_USERNAME are not needed when using DATABASE_URL
 
     # Log everything from Rails
     # RAILS_LOG_LEVEL: debug
