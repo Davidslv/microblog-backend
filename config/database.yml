@@ -133,7 +133,10 @@ test:
 # is mounted as a persistent Docker volume in config/deploy.yml.
 production:
   primary:
-    <<: *default
+    adapter: postgresql
+    encoding: unicode
+    pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 25 } %>
+    timeout: 5000
     <% if ENV["DATABASE_URL"] %>
     url: <%= ENV["DATABASE_URL"] %>
     <% else %>
@@ -143,6 +146,8 @@ production:
     host: <%= ENV.fetch("DATABASE_HOST") { "localhost" } %>
     port: <%= ENV.fetch("DATABASE_PORT") { 5432 } %>
     <% end %>
+    prepared_statements: false
+    statement_limit: 1000
 
   # Read replica configuration
   # In production, this should point to a replica server
