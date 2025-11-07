@@ -42,13 +42,15 @@ registry:
 env:
   secret:
     - RAILS_MASTER_KEY
-    - DATABASE_URL
     - SECRET_KEY_BASE
   clear:
     RAILS_ENV: production
     # Run the Solid Queue Supervisor inside the web server's Puma process to do jobs.
     # When you start using multiple servers, you should split out job processing to a dedicated machine.
     SOLID_QUEUE_IN_PUMA: "true"
+    # Temporarily set DATABASE_URL as clear to debug connection issue
+    # TODO: Move back to secrets once issue is resolved
+    DATABASE_URL: postgresql://doadmin:<database-password-from-secrets>@private-db-postgresql-lon1-11936-do-user-28554529-0.j.db.ondigitalocean.com:25060/defaultdb?sslmode=require
 
     # Set number of processes dedicated to Solid Queue (default: 1)
     # JOB_CONCURRENCY: 3
@@ -57,7 +59,10 @@ env:
     # WEB_CONCURRENCY: 2
 
     # Database connection is configured via DATABASE_URL secret (see .kamal/secrets)
-    # Individual DATABASE_HOST, DATABASE_PORT, DATABASE_USERNAME are not needed when using DATABASE_URL
+    # DATABASE_HOST and DATABASE_PORT are needed for replica, cache, queue, and cable databases
+    # which don't use DATABASE_URL directly
+    DATABASE_HOST: private-db-postgresql-lon1-11936-do-user-28554529-0.j.db.ondigitalocean.com
+    DATABASE_PORT: 25060
 
     # Log everything from Rails
     # RAILS_LOG_LEVEL: debug
