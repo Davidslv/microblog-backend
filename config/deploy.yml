@@ -59,10 +59,24 @@ env:
     # WEB_CONCURRENCY: 2
 
     # Database connection is configured via DATABASE_URL secret (see .kamal/secrets)
-    # DATABASE_HOST and DATABASE_PORT are needed for replica, cache, queue, and cable databases
+    # DATABASE_HOST, DATABASE_PORT, and DATABASE_PASSWORD are needed for replica, cache, queue, and cable databases
     # which don't use DATABASE_URL directly
     DATABASE_HOST: private-db-postgresql-lon1-11936-do-user-28554529-0.j.db.ondigitalocean.com
     DATABASE_PORT: 25060
+    DATABASE_USERNAME: doadmin
+    DATABASE_PASSWORD: <database-password-from-secrets>
+    
+    # Cache, queue, and cable databases use the same host/port but may need separate credentials
+    # For now, using same password as primary database
+    CACHE_DB_HOST: private-db-postgresql-lon1-11936-do-user-28554529-0.j.db.ondigitalocean.com
+    CACHE_DB_PORT: 25060
+    CACHE_DB_PASSWORD: <database-password-from-secrets>
+    QUEUE_DB_HOST: private-db-postgresql-lon1-11936-do-user-28554529-0.j.db.ondigitalocean.com
+    QUEUE_DB_PORT: 25060
+    QUEUE_DB_PASSWORD: <database-password-from-secrets>
+    CABLE_DB_HOST: private-db-postgresql-lon1-11936-do-user-28554529-0.j.db.ondigitalocean.com
+    CABLE_DB_PORT: 25060
+    CABLE_DB_PASSWORD: <database-password-from-secrets>
 
     # Log everything from Rails
     # RAILS_LOG_LEVEL: debug
