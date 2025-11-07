@@ -45,6 +45,8 @@ env:
     - SECRET_KEY_BASE
   clear:
     RAILS_ENV: production
+    # Frontend URL for CORS configuration
+    FRONTEND_URL: <%= ENV.fetch("FRONTEND_URL", "https://microblog.davidslv.uk") %>
     # Run the Solid Queue Supervisor inside the web server's Puma process to do jobs.
     # When you start using multiple servers, you should split out job processing to a dedicated machine.
     SOLID_QUEUE_IN_PUMA: "true"
@@ -65,7 +67,7 @@ env:
     DATABASE_PORT: 25060
     DATABASE_USERNAME: doadmin
     DATABASE_PASSWORD: <database-password-from-secrets>
-    
+
     # Cache, queue, and cable databases use the same host/port and credentials as primary
     # Using doadmin user for all databases (can create separate users later if needed)
     CACHE_DB_HOST: private-db-postgresql-lon1-11936-do-user-28554529-0.j.db.ondigitalocean.com

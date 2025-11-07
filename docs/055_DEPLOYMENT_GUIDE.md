@@ -229,6 +229,9 @@ export DOCKER_REGISTRY=docker.io  # or your private registry
 # Backend domain
 export BACKEND_HOST=api.yourdomain.com
 
+# Frontend domain (required for CORS)
+export FRONTEND_URL=https://yourdomain.com
+
 # Database configuration
 export DB_HOST=your-db-host
 export DB_USERNAME=postgres
@@ -443,6 +446,20 @@ docker compose down
 - `RAILS_ENV` - Environment (default: `production`)
 - `SOLID_QUEUE_IN_PUMA` - Run jobs in Puma (default: `true`)
 - `DISABLE_RACK_ATTACK` - Disable rate limiting (default: `false`)
+- `FRONTEND_URL` - **Required for CORS**: Frontend domain URL (e.g., `https://microblog.davidslv.uk`)
+
+**⚠️ Important: CORS Configuration**
+
+The backend's CORS configuration requires `FRONTEND_URL` to be set in production. Without it, all API requests from the frontend will be blocked by the browser's CORS policy.
+
+**Add to `config/deploy.yml`:**
+```yaml
+env:
+  clear:
+    FRONTEND_URL: <%= ENV.fetch("FRONTEND_URL", "https://microblog.davidslv.uk") %>
+```
+
+**See:** `microblog-frontend/docs/004_CORS_TROUBLESHOOTING.md` for detailed troubleshooting.
 
 ### Frontend Environment Variables
 
