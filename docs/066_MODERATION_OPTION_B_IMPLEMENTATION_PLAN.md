@@ -719,14 +719,29 @@ end
 
 **Current Design:**
 - Auto-redaction is synchronous (in request)
+- Audit logging is synchronous (guaranteed writes for compliance)
 
 **Future Extension:**
 ```ruby
-# New job
+# New job for auto-redaction
 class AutoRedactionJob < ApplicationJob
   def perform(post_id)
     post = Post.find(post_id)
     RedactionService.new.auto_redact_if_threshold(post)
+  end
+end
+
+# New job for audit logging (optional, for high-volume scenarios)
+class AuditLogJob < ApplicationJob
+  def perform(action, post_id, user_id: nil, admin_id: nil, metadata: {})
+    post = Post.find(post_id)
+    ModerationAuditLog.create!(
+      action: action,
+      post: post,
+      user_id: user_id,
+      admin_id: admin_id,
+      metadata: metadata
+    )
   end
 end
 
@@ -739,12 +754,27 @@ class ReportService
     end
   end
 end
+
+# Update AuditLogger (optional)
+class AuditLogger
+  def log(action:, post:, user: nil, admin: nil, metadata: {})
+    # For high-volume actions (reports), use async
+    # For critical actions (redactions), keep sync
+    if action == 'report' && ENV['ASYNC_AUDIT_LOGS'] == 'true'
+      AuditLogJob.perform_later(action, post.id, user_id: user&.id, admin_id: admin&.id, metadata: metadata)
+    else
+      ModerationAuditLog.create!(...) # Sync for critical actions
+    end
+  end
+end
 ```
 
 **Migration Path:**
 1. Extract auto-redaction logic to job
 2. Update `ReportService` to enqueue job
-3. No breaking changes to API
+3. Optionally create `AuditLogJob` for high-volume scenarios
+4. Keep synchronous logging for critical actions (redactions, unredactions)
+5. No breaking changes to API
 
 ---
 

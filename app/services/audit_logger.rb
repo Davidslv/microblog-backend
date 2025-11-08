@@ -29,6 +29,13 @@ class AuditLogger
   end
 
   def log(action:, post:, user: nil, admin: nil, metadata: {})
+    # TODO: Consider making audit logging asynchronous for better performance
+    # - Create AuditLogJob to process logs in background
+    # - Use Solid Queue for reliable delivery
+    # - Keep synchronous for critical actions (redactions, unredactions)
+    # - Make async for high-volume actions (reports) if needed
+    # - Ensure retry logic and error handling to prevent log loss
+    # - See: docs/066_MODERATION_OPTION_B_IMPLEMENTATION_PLAN.md (Background Jobs section)
     ModerationAuditLog.create!(
       action: action,
       post: post,
