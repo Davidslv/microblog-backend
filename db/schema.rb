@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_07_235001) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_08_003943) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_stat_statements"
@@ -34,6 +34,22 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_07_235001) do
     t.datetime "updated_at", null: false
     t.index ["followed_id"], name: "index_follows_on_followed_id"
     t.index ["follower_id", "followed_id"], name: "index_follows_on_follower_id_and_followed_id", unique: true
+  end
+
+  create_table "moderation_audit_logs", force: :cascade do |t|
+    t.string "action", null: false
+    t.bigint "admin_id"
+    t.datetime "created_at", null: false
+    t.jsonb "metadata"
+    t.bigint "post_id", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id"
+    t.index ["action", "created_at"], name: "index_moderation_audit_logs_on_action_and_created_at"
+    t.index ["admin_id"], name: "index_moderation_audit_logs_on_admin_id"
+    t.index ["post_id", "created_at"], name: "index_moderation_audit_logs_on_post_id_and_created_at"
+    t.index ["post_id"], name: "index_moderation_audit_logs_on_post_id"
+    t.index ["user_id", "created_at"], name: "index_moderation_audit_logs_on_user_id_and_created_at"
+    t.index ["user_id"], name: "index_moderation_audit_logs_on_user_id"
   end
 
   create_table "posts", force: :cascade do |t|
@@ -216,6 +232,9 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_07_235001) do
   add_foreign_key "feed_entries", "users", on_delete: :cascade
   add_foreign_key "follows", "users", column: "followed_id", on_delete: :cascade
   add_foreign_key "follows", "users", column: "follower_id", on_delete: :cascade
+  add_foreign_key "moderation_audit_logs", "posts"
+  add_foreign_key "moderation_audit_logs", "users"
+  add_foreign_key "moderation_audit_logs", "users", column: "admin_id"
   add_foreign_key "posts", "posts", column: "parent_id", on_delete: :nullify
   add_foreign_key "posts", "users", column: "author_id", on_delete: :nullify
   add_foreign_key "reports", "posts"
