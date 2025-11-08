@@ -6,6 +6,7 @@ module Api
       def index
         filter = params[:filter] || "timeline"
         per_page = 20
+        include_redacted = params[:include_redacted] == "true" && current_user&.admin?
 
         if current_user
           case filter
@@ -23,6 +24,8 @@ module Api
 
             if cached_result
               posts, next_cursor, has_next = cached_result
+              # Filter redacted posts unless admin
+              posts = posts.reject { |p| p.redacted? } unless include_redacted
               render json: {
                 posts: posts.map { |p| post_json(p) },
                 pagination: {
@@ -42,9 +45,13 @@ module Api
 
           if cached_result
             posts, next_cursor, has_next = cached_result
+            # Filter redacted posts (silent redaction)
+            posts = posts.reject { |p| p.redacted? }
           else
             posts_relation = Post.top_level.timeline
             posts, next_cursor, has_next = cursor_paginate(posts_relation, per_page: per_page)
+            # Filter redacted posts before caching
+            posts = posts.reject { |p| p.redacted? }
             Rails.cache.write(cache_key, [posts, next_cursor, has_next], expires_in: 1.minute)
           end
 
@@ -57,6 +64,9 @@ module Api
           }
           return
         end
+
+        # Filter redacted posts unless admin (silent redaction)
+        posts_relation = posts_relation.not_redacted unless include_redacted
 
         # Execute query and paginate
         posts, next_cursor, has_next = cursor_paginate(posts_relation, per_page: per_page)
@@ -78,9 +88,18 @@ module Api
 
       def show
         post = Post.find(params[:id])
+        
+        # Silent redaction: Return 404 for redacted posts unless admin
+        include_redacted = params[:include_redacted] == "true" && current_user&.admin?
+        unless include_redacted
+          return head :not_found if post.redacted?
+        end
+
         replies_cursor = params[:replies_cursor] || params[:cursor]
+        # Filter redacted replies unless admin
+        replies_relation = include_redacted ? post.replies : post.replies.not_redacted
         replies, replies_next_cursor, replies_has_next = cursor_paginate(
-          post.replies.order(created_at: :asc),
+          replies_relation.order(created_at: :asc),
           per_page: 20,
           cursor: replies_cursor,
           order: :asc
@@ -107,6 +126,30 @@ module Api
         end
       end
 
+      def report
+        target_post = Post.find(params[:id])
+        report_service = ReportService.new
+        redaction_service = RedactionService.new
+        audit_logger = AuditLogger.new
+
+        # Create report
+        report = report_service.create_report(target_post, current_user)
+        
+        # Log in audit trail
+        audit_logger.log_report(target_post, current_user)
+
+        # Check if threshold is met and auto-redact
+        if redaction_service.auto_redact_if_threshold(target_post)
+          audit_logger.log_redaction(target_post, reason: 'auto')
+        end
+
+        render json: { message: "Report submitted" }, status: :ok
+      rescue ReportService::DuplicateReportError => e
+        render json: { error: e.message }, status: :unprocessable_entity
+      rescue ReportService::SelfReportError => e
+        render json: { error: e.message }, status: :unprocessable_entity
+      end
+
       private
 
       def post_params
@@ -116,7 +159,8 @@ module Api
       def post_json(post)
         {
           id: post.id,
-          content: post.content,
+          content: post.content, # Content is nil if redacted (filtered out before this)
+          redacted: post.redacted?,
           author: {
             id: post.author_id,
             username: post.author_name

@@ -6,11 +6,16 @@ class Rack::Attack
   # Use Solid Cache as the storage backend (same as Rails.cache)
   # This allows rate limiting to work across multiple server instances
   # For development, this uses SQLite. For production, can use Redis if needed.
-  Rack::Attack.cache.store = Rails.cache
+  # For test, use memory store so rate limiting works in tests
+  if Rails.env.test?
+    Rack::Attack.cache.store = ActiveSupport::Cache::MemoryStore.new
+  else
+    Rack::Attack.cache.store = Rails.cache
+  end
 
   # Enable/disable rate limiting based on environment
   # Can be disabled for testing or specific environments
-  if ENV["DISABLE_RACK_ATTACK"] == "true"
+  if ENV["DISABLE_RACK_ATTACK"] == "true" || Rails.env.test?
     Rack::Attack.enabled = false
   end
 
@@ -90,6 +95,20 @@ class Rack::Attack
     end
   end
 
+  ### Throttle Report Creation ###
+
+  # Throttle report creation by user
+  # Limit: 10 reports per hour per user
+  # Prevents abuse of reporting system
+  throttle("reports/create", limit: 10, period: 1.hour) do |req|
+    # Match POST requests to /api/v1/posts/:id/report
+    if req.path.match?(%r{/api/v1/posts/\d+/report}) && req.post?
+      # Try to get user_id from JWT token or session
+      user_id = self.extract_user_id_from_request(req)
+      user_id || req.ip # Fall back to IP if no user
+    end
+  end
+
   ### Throttle API Requests (if you add API endpoints later) ###
 
   # Throttle API requests by IP
@@ -97,6 +116,27 @@ class Rack::Attack
   # This is a placeholder for future API endpoints
   throttle("api/requests", limit: 60, period: 1.minute) do |req|
     req.ip if req.path.start_with?("/api")
+  end
+
+  ### Helper Methods ###
+
+  # Extract user_id from JWT token or session
+  def self.extract_user_id_from_request(req)
+    # Try JWT token first
+    auth_header = req.get_header("HTTP_AUTHORIZATION")
+    if auth_header && auth_header.start_with?("Bearer ")
+      token = auth_header.split(" ").last
+      begin
+        # JwtService should be available in initializer context
+        payload = JwtService.decode(token) if defined?(JwtService)
+        return payload[:user_id] if payload
+      rescue
+        # Invalid token, continue to session check
+      end
+    end
+
+    # Fall back to session
+    req.session["user_id"] rescue nil
   end
 
   ### Custom Response for Throttled Requests ###

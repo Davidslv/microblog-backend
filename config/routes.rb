@@ -31,6 +31,7 @@ Rails.application.routes.draw do
       resources :posts, only: [:index, :show, :create] do
         member do
           get :replies
+          post :report
         end
       end
 

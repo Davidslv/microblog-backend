@@ -167,5 +167,66 @@ RSpec.describe "Api::V1::Posts", type: :request do
       expect(response).to have_http_status(:unauthorized)
     end
   end
+
+  describe "redaction status" do
+    let(:token) do
+      post "#{api_base}/login", params: { username: user.username, password: "password123" }
+      JSON.parse(response.body)["token"]
+    end
+
+    context "GET /api/v1/posts" do
+      it "excludes redacted posts from results (silent redaction)" do
+        # User follows other_user to see their posts
+        user.follow(other_user)
+        normal_post = create(:post, author: other_user)
+        redacted_post = create(:post, :redacted, author: other_user)
+        # Process feed entries
+        perform_enqueued_jobs
+
+        get "#{api_base}/posts", headers: { "Authorization" => "Bearer #{token}" }
+
+        json = JSON.parse(response.body)
+        post_ids = json["posts"].map { |p| p["id"] }
+        expect(post_ids).to include(normal_post.id)
+        expect(post_ids).not_to include(redacted_post.id)
+      end
+
+      it "shows redacted status for non-redacted posts" do
+        # User follows other_user to see their posts
+        user.follow(other_user)
+        normal_post = create(:post, author: other_user)
+        # Process feed entries
+        perform_enqueued_jobs
+
+        get "#{api_base}/posts", headers: { "Authorization" => "Bearer #{token}" }
+
+        json = JSON.parse(response.body)
+        post = json["posts"].find { |p| p["id"] == normal_post.id }
+        expect(post).to be_present
+        expect(post["redacted"]).to be false
+        expect(post["content"]).to eq(normal_post.content)
+      end
+    end
+
+    context "GET /api/v1/posts/:id" do
+      it "returns 404 for redacted posts (silent redaction)" do
+        redacted_post = create(:post, :redacted, author: other_user)
+
+        get "#{api_base}/posts/#{redacted_post.id}", headers: { "Authorization" => "Bearer #{token}" }
+
+        expect(response).to have_http_status(:not_found)
+      end
+
+      it "returns post with redacted status for non-redacted posts" do
+        normal_post = create(:post, author: other_user)
+
+        get "#{api_base}/posts/#{normal_post.id}", headers: { "Authorization" => "Bearer #{token}" }
+
+        json = JSON.parse(response.body)
+        expect(json["post"]["redacted"]).to be false
+        expect(json["post"]["content"]).to eq(normal_post.content)
+      end
+    end
+  end
 end
 

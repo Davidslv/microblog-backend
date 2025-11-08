@@ -64,6 +64,11 @@ RSpec.configure do |config|
 
   # Include ActiveJob test helpers
   config.include ActiveJob::TestHelper
+
+  # Clear Rack::Attack cache between tests to prevent rate limiting interference
+  config.before(:each) do
+    Rack::Attack.cache.clear if defined?(Rack::Attack) && Rack::Attack.cache.respond_to?(:clear)
+  end
 end
 
 # Shoulda Matchers configuration
