@@ -38,6 +38,17 @@ Rails.application.routes.draw do
       # Follows
       post "/users/:user_id/follow", to: "follows#create"
       delete "/users/:user_id/follow", to: "follows#destroy"
+
+      # Admin endpoints
+      namespace :admin do
+        resources :posts, only: [] do
+          member do
+            post :redact
+            post :unredact
+            get :reports
+          end
+        end
+      end
     end
   end
 

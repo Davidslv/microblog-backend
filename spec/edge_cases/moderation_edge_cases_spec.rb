@@ -22,7 +22,7 @@ RSpec.describe "Moderation Edge Cases", type: :request do
 
       # Delete audit logs first (they have foreign key constraints)
       ModerationAuditLog.where(post: post).destroy_all
-      
+
       # Delete the post
       post.destroy
 
@@ -56,7 +56,7 @@ RSpec.describe "Moderation Edge Cases", type: :request do
       # Delete audit logs and reports first (they have foreign key constraints)
       ModerationAuditLog.where(user: reporter).destroy_all
       Report.where(reporter: reporter).destroy_all
-      
+
       # Delete reporter
       reporter.destroy
 
@@ -107,7 +107,7 @@ RSpec.describe "Moderation Edge Cases", type: :request do
 
     it "handles race condition when threshold is reached simultaneously" do
       post = create(:post, author: other_user)
-      
+
       # Create 4 existing reports
       create_list(:report, 4, post: post)
 
@@ -163,13 +163,13 @@ RSpec.describe "Moderation Edge Cases", type: :request do
 
     it "does not auto-redact an already redacted post" do
       post = create(:post, :redacted, author: other_user)
-      
+
       # Create initial redaction log (since factory doesn't create it)
       AuditLogger.new.log_redaction(post, reason: 'manual')
-      
+
       # Create 4 reports
       create_list(:report, 4, post: post)
-      
+
       token = get_token(user)
 
       # 5th report should not trigger another redaction
@@ -180,7 +180,7 @@ RSpec.describe "Moderation Edge Cases", type: :request do
       post.reload
       expect(post.report_count).to eq(5)
       expect(post.redacted?).to be true
-      
+
       # Should not have duplicate redaction logs (only the manual one)
       redaction_logs = ModerationAuditLog.where(post: post, action: "redact")
       expect(redaction_logs.count).to eq(1) # Only the original redaction

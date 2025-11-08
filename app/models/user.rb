@@ -9,6 +9,7 @@ class User < ApplicationRecord
   has_many :followers, through: :passive_follows, source: :follower
   # Fan-out on write: Feed entries for this user's feed (pre-computed feed posts)
   has_many :feed_entries, dependent: :delete_all
+  has_one :user_admin, dependent: :destroy
 
   validates :username, presence: true, uniqueness: true, length: { maximum: 50 }
   validates :description, length: { maximum: 120 }, allow_nil: true
@@ -96,5 +97,9 @@ class User < ApplicationRecord
         id
       ).distinct
     end
+  end
+
+  def admin?
+    user_admin.present?
   end
 end

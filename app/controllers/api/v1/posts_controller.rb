@@ -6,7 +6,8 @@ module Api
       def index
         filter = params[:filter] || "timeline"
         per_page = 20
-        include_redacted = params[:include_redacted] == "true" && current_user&.admin?
+        post_filter = PostFilter.new(current_user)
+        include_redacted = params[:include_redacted] == "true" && post_filter.include_redacted?
 
         if current_user
           case filter
@@ -19,7 +20,8 @@ module Api
             ).timeline.distinct
           else
             # Cache feed posts with cursor-based key (5-minute TTL)
-            cache_key = "user_feed:#{current_user.id}:#{params[:cursor]}"
+            # Include include_redacted in cache key to avoid cache conflicts
+            cache_key = "user_feed:#{current_user.id}:#{params[:cursor]}:#{include_redacted}"
             cached_result = Rails.cache.read(cache_key)
 
             if cached_result
@@ -65,15 +67,15 @@ module Api
           return
         end
 
-        # Filter redacted posts unless admin (silent redaction)
-        posts_relation = posts_relation.not_redacted unless include_redacted
+        # Filter redacted posts unless admin explicitly requests them (silent redaction)
+        posts_relation = include_redacted ? posts_relation : posts_relation.not_redacted
 
         # Execute query and paginate
         posts, next_cursor, has_next = cursor_paginate(posts_relation, per_page: per_page)
 
         # Cache the paginated result for feed queries (if not already cached)
         if filter == "timeline" && current_user
-          cache_key = "user_feed:#{current_user.id}:#{params[:cursor]}"
+          cache_key = "user_feed:#{current_user.id}:#{params[:cursor]}:#{include_redacted}"
           Rails.cache.write(cache_key, [posts, next_cursor, has_next], expires_in: 5.minutes)
         end
 
@@ -88,16 +90,17 @@ module Api
 
       def show
         post = Post.find(params[:id])
-
+        post_filter = PostFilter.new(current_user)
+        include_redacted = params[:include_redacted] == "true" && post_filter.include_redacted?
+        
         # Silent redaction: Return 404 for redacted posts unless admin
-        include_redacted = params[:include_redacted] == "true" && current_user&.admin?
         unless include_redacted
           return head :not_found if post.redacted?
         end
 
         replies_cursor = params[:replies_cursor] || params[:cursor]
         # Filter redacted replies unless admin
-        replies_relation = include_redacted ? post.replies : post.replies.not_redacted
+        replies_relation = post_filter.filter_redacted(post.replies)
         replies, replies_next_cursor, replies_has_next = cursor_paginate(
           replies_relation.order(created_at: :asc),
           per_page: 20,

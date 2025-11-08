@@ -177,10 +177,10 @@ RSpec.describe "Reporting Flow Integration", type: :request do
 
       # Verify audit logs
       logs = ModerationAuditLog.where(post: post).order(:created_at)
-      
+
       # Should have 5 report logs + 1 redaction log
       expect(logs.count).to eq(6)
-      
+
       # First 5 should be reports
       logs[0..4].each do |log|
         expect(log.action).to eq("report")

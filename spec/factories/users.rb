@@ -18,6 +18,12 @@ FactoryBot.define do
     trait :without_description do
       description { nil }
     end
+
+    trait :admin do
+      after(:create) do |user|
+        create(:user_admin, user: user)
+      end
+    end
   end
 end
 

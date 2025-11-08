@@ -41,7 +41,7 @@ RSpec.describe "Moderation Performance", type: :request do
 
     it "handles report count query efficiently" do
       post = create(:post, author: other_user)
-      
+
       # Create many reports
       create_list(:report, 50, post: post)
 
@@ -57,7 +57,7 @@ RSpec.describe "Moderation Performance", type: :request do
 
     it "handles threshold check efficiently with many reports" do
       post = create(:post, author: other_user)
-      
+
       # Create exactly 5 reports (threshold)
       create_list(:report, 5, post: post)
 
@@ -75,7 +75,7 @@ RSpec.describe "Moderation Performance", type: :request do
 
     it "handles auto-redaction efficiently when threshold is met" do
       post = create(:post, author: other_user)
-      
+
       # Create 4 reports
       create_list(:report, 4, post: post)
 
@@ -107,7 +107,7 @@ RSpec.describe "Moderation Performance", type: :request do
   describe "Database query performance" do
     it "uses indexes efficiently for report queries" do
       post = create(:post, author: other_user)
-      
+
       # Create reports
       create_list(:report, 20, post: post)
 
