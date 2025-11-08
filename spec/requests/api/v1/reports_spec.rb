@@ -5,7 +5,7 @@ RSpec.describe "Api::V1::Reports", type: :request do
   let(:other_user) { create(:user) }
   let(:target_post) { create(:post, author: other_user) }
   let(:api_base) { "/api/v1" }
-  
+
   def get_token
     post "#{api_base}/login", params: { username: user.username, password: "password123" }
     JSON.parse(response.body)["token"]

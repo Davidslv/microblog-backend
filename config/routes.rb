@@ -70,7 +70,7 @@ Rails.application.routes.draw do
   if Rails.env.development?
     # Quick login route for load testing (sets session)
     get "/dev/login/:user_id", to: "application#dev_login", as: "dev_login"
-    
+
     # Mission Control – Jobs: UI for monitoring Solid Queue jobs
     # Access at: http://localhost:3000/jobs
     mount MissionControl::Jobs::Engine, at: "/jobs"

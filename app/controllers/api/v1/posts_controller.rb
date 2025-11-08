@@ -88,7 +88,7 @@ module Api
 
       def show
         post = Post.find(params[:id])
-        
+
         # Silent redaction: Return 404 for redacted posts unless admin
         include_redacted = params[:include_redacted] == "true" && current_user&.admin?
         unless include_redacted
@@ -134,7 +134,7 @@ module Api
 
         # Create report
         report = report_service.create_report(target_post, current_user)
-        
+
         # Log in audit trail
         audit_logger.log_report(target_post, current_user)
 
