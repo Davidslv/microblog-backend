@@ -10,10 +10,18 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_11_08_010156) do
+ActiveRecord::Schema[8.1].define(version: 2025_11_08_012115) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
   enable_extension "pg_stat_statements"
+
+  create_table "admin_users", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.string "password_digest", null: false
+    t.datetime "updated_at", null: false
+    t.string "username", null: false
+    t.index ["username"], name: "index_admin_users_on_username", unique: true
+  end
 
   create_table "feed_entries", force: :cascade do |t|
     t.bigint "author_id", null: false
@@ -221,6 +229,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_11_08_010156) do
   end
 
   create_table "users", force: :cascade do |t|
+    t.boolean "admin"
     t.datetime "created_at", null: false
     t.string "description", limit: 120
     t.integer "followers_count", default: 0, null: false

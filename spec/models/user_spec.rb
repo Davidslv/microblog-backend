@@ -180,18 +180,17 @@ RSpec.describe User, type: :model do
         expect(user.admin?).to be false
       end
 
-      it "returns true for admin users" do
+      it "returns true for users with matching AdminUser" do
         expect(admin_user.admin?).to be true
       end
-    end
 
-    describe "#user_admin" do
-      it "is nil for regular users" do
-        expect(user.user_admin).to be_nil
-      end
+      it "checks AdminUser table by username" do
+        regular_user = create(:user, username: "regular")
+        expect(regular_user.admin?).to be false
 
-      it "exists for admin users" do
-        expect(admin_user.user_admin).to be_present
+        # Create AdminUser with matching username
+        create(:admin_user, username: regular_user.username)
+        expect(regular_user.admin?).to be true
       end
     end
   end

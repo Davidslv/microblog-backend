@@ -21,7 +21,8 @@ FactoryBot.define do
 
     trait :admin do
       after(:create) do |user|
-        create(:user_admin, user: user)
+        # Create corresponding AdminUser with matching username
+        create(:admin_user, username: user.username)
       end
     end
   end

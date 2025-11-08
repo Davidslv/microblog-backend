@@ -49,10 +49,10 @@ RSpec.describe ModerationAuditLog, type: :model do
 
   describe "metadata" do
     it "stores flexible metadata as JSONB" do
-      log = create(:moderation_audit_log, 
+      log = create(:moderation_audit_log,
                    action: "redact",
                    metadata: { reason: "inappropriate", admin_note: "Manual review" })
-      
+
       expect(log.metadata["reason"]).to eq("inappropriate")
       expect(log.metadata["admin_note"]).to eq("Manual review")
     end
@@ -66,7 +66,7 @@ RSpec.describe ModerationAuditLog, type: :model do
   describe "immutability" do
     it "allows creation but not updates (immutable audit trail)" do
       log = create(:moderation_audit_log, action: "report")
-      
+
       # In a real system, you might want to prevent updates
       # For now, we'll just document this behavior
       log.update(action: "modified")
