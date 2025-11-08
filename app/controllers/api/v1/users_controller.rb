@@ -5,8 +5,15 @@ module Api
 
       def show
         user = User.find(params[:id])
+        post_filter = PostFilter.new(current_user)
+        include_redacted = params[:include_redacted] == "true" && post_filter.include_redacted?
+        
+        posts_relation = user.posts.top_level.timeline
+        # Filter redacted posts unless admin explicitly requests them
+        posts_relation = include_redacted ? posts_relation : posts_relation.not_redacted
+        
         posts, next_cursor, has_next = cursor_paginate(
-          user.posts.top_level.timeline,
+          posts_relation,
           per_page: 20
         )
 
