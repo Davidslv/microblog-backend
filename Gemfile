@@ -85,7 +85,7 @@ end
 
 group :test do
   # RSpec testing framework
-  gem "rspec-rails", "~> 7.0"
+  gem "rspec-rails", "~> 8.0"
 
   # Code coverage tool
   gem "simplecov", require: false
