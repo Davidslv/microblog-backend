@@ -1,14 +1,13 @@
 # Name of your application. Used to uniquely configure containers.
 service: microblog
-# ubuntu-s-1vcpu-1gb-35gb-intel-lon1-01-microblog-backend
 # Name of the container image (use your-user/app-name on external registries).
-image: davidslvuk/microblog-backend
+image: <%= ENV.fetch("DOCKER_USERNAME", "your-dockerhub-username") %>/microblog-backend
 
 # Deploy to these servers.
 servers:
   web:
     hosts:
-      - <%= ENV.fetch("BACKEND_HOST", "206.189.19.73") %>
+      - <%= ENV.fetch("BACKEND_HOST", "your-server-ip-or-domain.com") %>
     # options:
     #   "add-host": host.docker_hostname + ":host-gateway"
   # job:
@@ -24,7 +23,7 @@ servers:
 # Don't use this when deploying to multiple web servers (then you have to terminate SSL at your load balancer).
 proxy:
   ssl: true
-  host: <%= ENV.fetch("BACKEND_HOST", "microblog-be.davidslv.uk") %>
+  host: <%= ENV.fetch("BACKEND_DOMAIN", ENV.fetch("BACKEND_HOST", "your-backend-domain.com")) %>
 
 # Where you keep your container images.
 registry:
@@ -32,7 +31,7 @@ registry:
   server: <%= ENV.fetch("DOCKER_REGISTRY", "docker.io") %>
 
   # Needed for authenticated registries.
-  username: <%= ENV.fetch("DOCKER_USERNAME", "davidslvuk") %>
+  username: <%= ENV.fetch("DOCKER_USERNAME", "your-dockerhub-username") %>
 
   # Always use an access token rather than real password when possible.
   password:
@@ -46,13 +45,13 @@ env:
   clear:
     RAILS_ENV: production
     # Frontend URL for CORS configuration
-    FRONTEND_URL: <%= ENV.fetch("FRONTEND_URL", "https://microblog.davidslv.uk") %>
+    FRONTEND_URL: <%= ENV.fetch("FRONTEND_URL", "https://your-frontend-domain.com") %>
     # Run the Solid Queue Supervisor inside the web server's Puma process to do jobs.
     # When you start using multiple servers, you should split out job processing to a dedicated machine.
     SOLID_QUEUE_IN_PUMA: "true"
-    # Temporarily set DATABASE_URL as clear to debug connection issue
-    # TODO: Move back to secrets once issue is resolved
-    DATABASE_URL: postgresql://doadmin:<database-password-from-secrets>@private-db-postgresql-lon1-11936-do-user-28554529-0.j.db.ondigitalocean.com:25060/defaultdb?sslmode=require
+    # Database connection is configured via DATABASE_URL secret (see .kamal/secrets)
+    # For production, set DATABASE_URL in .kamal/secrets or as an environment variable
+    # DATABASE_URL: <%= ENV.fetch("DATABASE_URL", "postgresql://user:password@host:port/database?sslmode=require") %>
 
     # Set number of processes dedicated to Solid Queue (default: 1)
     # JOB_CONCURRENCY: 3
@@ -60,28 +59,27 @@ env:
     # Set number of cores available to the application on each server (default: 1).
     # WEB_CONCURRENCY: 2
 
-    # Database connection is configured via DATABASE_URL secret (see .kamal/secrets)
     # DATABASE_HOST, DATABASE_PORT, and DATABASE_PASSWORD are needed for replica, cache, queue, and cable databases
-    # which don't use DATABASE_URL directly
-    DATABASE_HOST: private-db-postgresql-lon1-11936-do-user-28554529-0.j.db.ondigitalocean.com
-    DATABASE_PORT: 25060
-    DATABASE_USERNAME: doadmin
-    DATABASE_PASSWORD: <database-password-from-secrets>
+    # which don't use DATABASE_URL directly. Set these in .kamal/secrets or as environment variables.
+    DATABASE_HOST: <%= ENV.fetch("DATABASE_HOST", "your-database-host.com") %>
+    DATABASE_PORT: <%= ENV.fetch("DATABASE_PORT", "5432") %>
+    DATABASE_USERNAME: <%= ENV.fetch("DATABASE_USERNAME", "your-db-username") %>
+    # DATABASE_PASSWORD should be set in .kamal/secrets, not here
 
     # Cache, queue, and cable databases use the same host/port and credentials as primary
     # Using doadmin user for all databases (can create separate users later if needed)
-    CACHE_DB_HOST: private-db-postgresql-lon1-11936-do-user-28554529-0.j.db.ondigitalocean.com
-    CACHE_DB_PORT: 25060
-    CACHE_DB_USERNAME: doadmin
-    CACHE_DB_PASSWORD: <database-password-from-secrets>
-    QUEUE_DB_HOST: private-db-postgresql-lon1-11936-do-user-28554529-0.j.db.ondigitalocean.com
-    QUEUE_DB_PORT: 25060
-    QUEUE_DB_USERNAME: doadmin
-    QUEUE_DB_PASSWORD: <database-password-from-secrets>
-    CABLE_DB_HOST: private-db-postgresql-lon1-11936-do-user-28554529-0.j.db.ondigitalocean.com
-    CABLE_DB_PORT: 25060
-    CABLE_DB_USERNAME: doadmin
-    CABLE_DB_PASSWORD: <database-password-from-secrets>
+    CACHE_DB_HOST: <%= ENV.fetch("CACHE_DB_HOST", ENV.fetch("DATABASE_HOST", "your-database-host.com")) %>
+    CACHE_DB_PORT: <%= ENV.fetch("CACHE_DB_PORT", ENV.fetch("DATABASE_PORT", "5432")) %>
+    CACHE_DB_USERNAME: <%= ENV.fetch("CACHE_DB_USERNAME", "your-cache-db-username") %>
+    # CACHE_DB_PASSWORD should be set in .kamal/secrets
+    QUEUE_DB_HOST: <%= ENV.fetch("QUEUE_DB_HOST", ENV.fetch("DATABASE_HOST", "your-database-host.com")) %>
+    QUEUE_DB_PORT: <%= ENV.fetch("QUEUE_DB_PORT", ENV.fetch("DATABASE_PORT", "5432")) %>
+    QUEUE_DB_USERNAME: <%= ENV.fetch("QUEUE_DB_USERNAME", "your-queue-db-username") %>
+    # QUEUE_DB_PASSWORD should be set in .kamal/secrets
+    CABLE_DB_HOST: <%= ENV.fetch("CABLE_DB_HOST", ENV.fetch("DATABASE_HOST", "your-database-host.com")) %>
+    CABLE_DB_PORT: <%= ENV.fetch("CABLE_DB_PORT", ENV.fetch("DATABASE_PORT", "5432")) %>
+    CABLE_DB_USERNAME: <%= ENV.fetch("CABLE_DB_USERNAME", "your-cable-db-username") %>
+    # CABLE_DB_PASSWORD should be set in .kamal/secrets
 
     # Log everything from Rails
     # RAILS_LOG_LEVEL: debug
