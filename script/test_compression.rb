@@ -70,3 +70,5 @@ puts "- Compare 'Size' vs 'Transferred' columns in browser DevTools"
 puts "- Use: curl -H 'Accept-Encoding: gzip' -v #{base_url}/api/v1/posts"
 puts "\n"
 
+
+

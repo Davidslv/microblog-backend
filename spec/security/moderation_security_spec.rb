@@ -88,7 +88,7 @@ RSpec.describe "Moderation Security", type: :request do
 
     it "prevents SQL injection attempts" do
       token = get_token(user)
-      
+
       # Create a post first to ensure table has data
       create(:post, author: other_user)
 
@@ -185,8 +185,8 @@ RSpec.describe "Moderation Security", type: :request do
       # The key security check: no report should be created with invalid token
       # Even if response is 200 (which shouldn't happen), verify no report was created
       expect(Report.where(post: post, reporter: user).count).to eq(0)
-      
-      # Ideally should be unauthorized, but if session fallback exists, 
+
+      # Ideally should be unauthorized, but if session fallback exists,
       # at minimum verify no unauthorized action occurred
       if response.status != :unauthorized
         # If it's not unauthorized, it means there's a session fallback

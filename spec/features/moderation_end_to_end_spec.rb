@@ -27,7 +27,7 @@ RSpec.describe "Moderation End-to-End", type: :request do
       post_obj = Post.last
       expect(post_obj).to be_present
       expect(post_obj.content).to eq("This is a test post")
-      
+
       # Process feed entries
       perform_enqueued_jobs
 
