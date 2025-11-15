@@ -91,7 +91,7 @@ group :test do
   gem "simplecov", require: false
 
   # Shoulda matchers for concise model specs
-  gem "shoulda-matchers", "~> 6.0"
+  gem "shoulda-matchers", "~> 7.0"
 
   # Use system testing [https://guides.rubyonrails.org/testing.html#system-testing]
   gem "capybara"
