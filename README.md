@@ -2,7 +2,7 @@
 
 A high-performance microblogging platform built with Ruby on Rails, designed to handle millions of users and posts. Think Twitter/X but optimized for scale.
 
-**Repository**: [https://github.com/Davidslv/microblog](https://github.com/Davidslv/microblog)
+**Repository**: [https://github.com/Davidslv/microblog-backend](https://github.com/Davidslv/microblog-backend)
 
 **Frontend Application**: [https://github.com/Davidslv/microblog-frontend](https://github.com/Davidslv/microblog-frontend)
 
