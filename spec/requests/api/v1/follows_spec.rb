@@ -14,7 +14,7 @@ RSpec.describe "Api::V1::Follows", type: :request do
       expect {
         post "#{api_base}/users/#{other_user.id}/follow"
       }.to change(Follow, :count).by(1)
-      
+
       expect(response).to have_http_status(:success)
       json = JSON.parse(response.body)
       expect(json["message"]).to include(other_user.username)
@@ -23,18 +23,18 @@ RSpec.describe "Api::V1::Follows", type: :request do
 
     it "returns error if already following" do
       user.follow(other_user)
-      
+
       post "#{api_base}/users/#{other_user.id}/follow"
-      
+
       expect(response).to have_http_status(:unprocessable_entity)
     end
 
     it "requires authentication" do
       # Don't login
       delete "#{api_base}/logout"
-      
+
       post "#{api_base}/users/#{other_user.id}/follow"
-      
+
       expect(response).to have_http_status(:unauthorized)
     end
   end
@@ -48,7 +48,7 @@ RSpec.describe "Api::V1::Follows", type: :request do
       expect {
         delete "#{api_base}/users/#{other_user.id}/follow"
       }.to change(Follow, :count).by(-1)
-      
+
       expect(response).to have_http_status(:success)
       json = JSON.parse(response.body)
       expect(json["message"]).to include(other_user.username)
@@ -57,11 +57,10 @@ RSpec.describe "Api::V1::Follows", type: :request do
 
     it "requires authentication" do
       delete "#{api_base}/logout"
-      
+
       delete "#{api_base}/users/#{other_user.id}/follow"
-      
+
       expect(response).to have_http_status(:unauthorized)
     end
   end
 end
-

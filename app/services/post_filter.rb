@@ -17,4 +17,3 @@ class PostFilter
     user&.admin? || false
   end
 end
-

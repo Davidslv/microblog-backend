@@ -119,8 +119,8 @@ RSpec.describe "Admin Moderation Workflow", type: :request do
 
       # Admin follows author to see posts
       user.follow(post_author)
-      FeedEntry.bulk_insert_for_post(normal_post, [user.id])
-      FeedEntry.bulk_insert_for_post(redacted_post, [user.id])
+      FeedEntry.bulk_insert_for_post(normal_post, [ user.id ])
+      FeedEntry.bulk_insert_for_post(redacted_post, [ user.id ])
 
       # Without include_redacted, redacted posts are filtered
       get "#{api_base}/posts",
@@ -144,4 +144,3 @@ RSpec.describe "Admin Moderation Workflow", type: :request do
     end
   end
 end
-

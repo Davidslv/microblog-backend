@@ -1,7 +1,7 @@
 module Api
   module V1
     class SessionsController < BaseController
-      skip_before_action :authenticate_user, only: [:create]
+      skip_before_action :authenticate_user, only: [ :create ]
 
       def create
         user = User.find_by(username: params[:username])
@@ -71,4 +71,3 @@ module Api
     end
   end
 end
-

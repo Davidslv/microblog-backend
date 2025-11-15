@@ -34,15 +34,15 @@ module Api
 
       def authenticate_user
         unless current_user
-          render json: { error: 'Unauthorized' }, status: :unauthorized
+          render json: { error: "Unauthorized" }, status: :unauthorized
         end
       end
 
       def extract_jwt_token
         # Check Authorization header first
-        auth_header = request.headers['Authorization']
-        if auth_header && auth_header.start_with?('Bearer ')
-          return auth_header.split(' ').last
+        auth_header = request.headers["Authorization"]
+        if auth_header && auth_header.start_with?("Bearer ")
+          return auth_header.split(" ").last
         end
 
         # Fallback to cookie (for backward compatibility)
@@ -79,9 +79,8 @@ module Api
         items = items.take(per_page) if has_next
         next_cursor = items.last&.id
 
-        [items, next_cursor, has_next]
+        [ items, next_cursor, has_next ]
       end
     end
   end
 end
-

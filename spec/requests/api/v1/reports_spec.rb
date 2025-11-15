@@ -179,4 +179,3 @@ RSpec.describe "Api::V1::Reports", type: :request do
     end
   end
 end
-

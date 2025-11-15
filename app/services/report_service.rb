@@ -27,10 +27,9 @@ class ReportService
   private
 
   def validate_report(post, reporter)
-    raise ArgumentError, 'Post cannot be nil' if post.nil?
-    raise ArgumentError, 'Reporter cannot be nil' if reporter.nil?
-    raise SelfReportError, 'Cannot report your own post' if post.author_id == reporter.id
-    raise DuplicateReportError, 'Post has already been reported by this user' if Report.exists?(post: post, reporter: reporter)
+    raise ArgumentError, "Post cannot be nil" if post.nil?
+    raise ArgumentError, "Reporter cannot be nil" if reporter.nil?
+    raise SelfReportError, "Cannot report your own post" if post.author_id == reporter.id
+    raise DuplicateReportError, "Post has already been reported by this user" if Report.exists?(post: post, reporter: reporter)
   end
 end
-

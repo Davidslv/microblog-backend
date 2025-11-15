@@ -132,4 +132,3 @@ RSpec.describe ReportService do
     end
   end
 end
-

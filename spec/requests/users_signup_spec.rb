@@ -135,4 +135,3 @@ RSpec.describe "User Signup", type: :request do
     end
   end
 end
-

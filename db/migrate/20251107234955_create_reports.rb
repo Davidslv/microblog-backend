@@ -7,8 +7,8 @@ class CreateReports < ActiveRecord::Migration[8.1]
       t.timestamps
     end
 
-    add_index :reports, [:post_id, :reporter_id], unique: true, name: "index_reports_on_post_and_reporter"
-    add_index :reports, [:post_id, :created_at]
-    add_index :reports, [:reporter_id, :created_at]
+    add_index :reports, [ :post_id, :reporter_id ], unique: true, name: "index_reports_on_post_and_reporter"
+    add_index :reports, [ :post_id, :created_at ]
+    add_index :reports, [ :reporter_id, :created_at ]
   end
 end

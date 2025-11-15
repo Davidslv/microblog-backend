@@ -17,7 +17,7 @@ RSpec.describe "Api::V1::Posts", type: :request do
         expect(json["posts"]).to be_an(Array)
         expect(json["posts"].length).to eq(3)
         expect(json["pagination"]).to be_present
-        expect(json["pagination"]["has_next"]).to be_in([true, false])
+        expect(json["pagination"]["has_next"]).to be_in([ true, false ])
       end
 
       it "supports cursor-based pagination" do
@@ -229,4 +229,3 @@ RSpec.describe "Api::V1::Posts", type: :request do
     end
   end
 end
-

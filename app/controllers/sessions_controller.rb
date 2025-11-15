@@ -1,6 +1,6 @@
 class SessionsController < ApplicationController
   # Skip authentication checks for login page
-  skip_before_action :require_login, only: [:new, :create]
+  skip_before_action :require_login, only: [ :new, :create ]
 
   def new
     # Redirect if already logged in
@@ -25,4 +25,3 @@ class SessionsController < ApplicationController
     redirect_to root_path, notice: "You have been logged out"
   end
 end
-

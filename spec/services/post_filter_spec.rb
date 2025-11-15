@@ -59,4 +59,3 @@ RSpec.describe PostFilter, type: :service do
     end
   end
 end
-

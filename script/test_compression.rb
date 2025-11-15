@@ -8,13 +8,13 @@ require 'uri'
 def test_compression(endpoint, description)
   uri = URI(endpoint)
   http = Net::HTTP.new(uri.host, uri.port)
-  
+
   # Request with compression support
   request = Net::HTTP::Get.new(uri.path)
   request['Accept-Encoding'] = 'gzip, deflate'
-  
+
   response = http.request(request)
-  
+
   puts "\n#{description}"
   puts "=" * 60
   puts "Endpoint: #{endpoint}"
@@ -23,10 +23,10 @@ def test_compression(endpoint, description)
   puts "Content-Type: #{response['Content-Type']}"
   puts "Content-Length: #{response['Content-Length'] || 'chunked'}"
   puts "Vary: #{response['Vary'] || 'not set'}"
-  
+
   if response['Content-Encoding'] == 'gzip'
     puts "✅ Compression: ENABLED"
-    
+
     # Calculate compression ratio if Content-Length is available
     if response['Content-Length']
       compressed_size = response['Content-Length'].to_i
@@ -40,7 +40,7 @@ def test_compression(endpoint, description)
     puts "   - Content type not in compressible list"
     puts "   - Health check endpoint (/up) excluded"
   end
-  
+
   puts "-" * 60
 end
 
@@ -69,6 +69,3 @@ puts "- Check browser DevTools Network tab: look for 'Content-Encoding: gzip'"
 puts "- Compare 'Size' vs 'Transferred' columns in browser DevTools"
 puts "- Use: curl -H 'Accept-Encoding: gzip' -v #{base_url}/api/v1/posts"
 puts "\n"
-
-
-

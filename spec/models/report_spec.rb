@@ -92,4 +92,3 @@ RSpec.describe Report, type: :model do
     end
   end
 end
-

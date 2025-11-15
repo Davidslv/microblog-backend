@@ -132,4 +132,3 @@ RSpec.describe 'Auto-Redaction Integration', type: :integration do
     end
   end
 end
-

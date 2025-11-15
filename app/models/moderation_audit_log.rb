@@ -10,4 +10,3 @@ class ModerationAuditLog < ApplicationRecord
   scope :by_action, ->(action) { where(action: action) }
   scope :recent, -> { order(created_at: :desc) }
 end
-

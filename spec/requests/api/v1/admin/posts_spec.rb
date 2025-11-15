@@ -170,8 +170,8 @@ RSpec.describe "Api::V1::Admin::Posts", type: :request do
         # Admin follows user to see their posts in feed
         admin.follow(user)
         # Create feed entries for the posts
-        FeedEntry.bulk_insert_for_post(normal_post, [admin.id])
-        FeedEntry.bulk_insert_for_post(redacted_post, [admin.id])
+        FeedEntry.bulk_insert_for_post(normal_post, [ admin.id ])
+        FeedEntry.bulk_insert_for_post(redacted_post, [ admin.id ])
       end
 
       it "includes redacted posts when include_redacted=true" do
@@ -189,7 +189,7 @@ RSpec.describe "Api::V1::Admin::Posts", type: :request do
       it "excludes redacted posts when include_redacted=false" do
         # Clear cache to avoid cached results
         Rails.cache.clear
-        
+
         get "#{api_base}/posts",
             headers: { "Authorization" => "Bearer #{token}" },
             params: { include_redacted: false }
@@ -209,8 +209,8 @@ RSpec.describe "Api::V1::Admin::Posts", type: :request do
         # User follows themselves to see their posts in feed
         user.follow(user)
         # Create feed entries for the posts
-        FeedEntry.bulk_insert_for_post(normal_post, [user.id])
-        FeedEntry.bulk_insert_for_post(redacted_post, [user.id])
+        FeedEntry.bulk_insert_for_post(normal_post, [ user.id ])
+        FeedEntry.bulk_insert_for_post(redacted_post, [ user.id ])
       end
 
       it "ignores include_redacted parameter and excludes redacted posts" do
@@ -227,4 +227,3 @@ RSpec.describe "Api::V1::Admin::Posts", type: :request do
     end
   end
 end
-

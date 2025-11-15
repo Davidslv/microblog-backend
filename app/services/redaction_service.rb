@@ -5,7 +5,7 @@ class RedactionService
     @content_checker = content_checker
   end
 
-  def redact(post, reason: 'manual', admin: nil)
+  def redact(post, reason: "manual", admin: nil)
     return post if post.redacted? # Already redacted, don't change
 
     post.update!(
@@ -35,8 +35,7 @@ class RedactionService
     return false if post.redacted? # Already redacted
     return false unless check_threshold(post)
 
-    redact(post, reason: 'auto')
+    redact(post, reason: "auto")
     true
   end
 end
-

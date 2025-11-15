@@ -108,4 +108,3 @@ RSpec.describe AuditLogger do
     end
   end
 end
-

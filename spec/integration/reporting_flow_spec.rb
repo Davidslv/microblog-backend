@@ -40,7 +40,7 @@ RSpec.describe "Reporting Flow Integration", type: :request do
       expect(log.user).to eq(user2)
 
       # Users 3-5 report the post
-      [user3, user4, user5].each do |user|
+      [ user3, user4, user5 ].each do |user|
         token = get_token(user)
         post "#{api_base}/posts/#{post.id}/report",
              headers: { "Authorization" => "Bearer #{token}" }
@@ -120,7 +120,7 @@ RSpec.describe "Reporting Flow Integration", type: :request do
       post = create(:post, author: user1)
 
       # All 5 users report the post
-      [user2, user3, user4, user5, user6].each do |user|
+      [ user2, user3, user4, user5, user6 ].each do |user|
         token = get_token(user)
         post "#{api_base}/posts/#{post.id}/report",
              headers: { "Authorization" => "Bearer #{token}" }
@@ -133,7 +133,7 @@ RSpec.describe "Reporting Flow Integration", type: :request do
 
       # Verify all reports exist
       expect(Report.where(post: post).count).to eq(5)
-      expect(Report.where(post: post).pluck(:reporter_id)).to match_array([user2, user3, user4, user5, user6].map(&:id))
+      expect(Report.where(post: post).pluck(:reporter_id)).to match_array([ user2, user3, user4, user5, user6 ].map(&:id))
     end
   end
 
@@ -169,7 +169,7 @@ RSpec.describe "Reporting Flow Integration", type: :request do
       post = create(:post, author: user1)
 
       # Make 5 reports
-      [user2, user3, user4, user5, user6].each do |user|
+      [ user2, user3, user4, user5, user6 ].each do |user|
         token = get_token(user)
         post "#{api_base}/posts/#{post.id}/report",
              headers: { "Authorization" => "Bearer #{token}" }
@@ -192,4 +192,3 @@ RSpec.describe "Reporting Flow Integration", type: :request do
     end
   end
 end
-

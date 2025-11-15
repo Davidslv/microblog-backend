@@ -9,8 +9,8 @@ class CreateModerationAuditLogs < ActiveRecord::Migration[8.1]
       t.timestamps
     end
 
-    add_index :moderation_audit_logs, [:post_id, :created_at]
-    add_index :moderation_audit_logs, [:user_id, :created_at]
-    add_index :moderation_audit_logs, [:action, :created_at]
+    add_index :moderation_audit_logs, [ :post_id, :created_at ]
+    add_index :moderation_audit_logs, [ :user_id, :created_at ]
+    add_index :moderation_audit_logs, [ :action, :created_at ]
   end
 end

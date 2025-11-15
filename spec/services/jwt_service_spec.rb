@@ -84,4 +84,3 @@ RSpec.describe JwtService do
     end
   end
 end
-

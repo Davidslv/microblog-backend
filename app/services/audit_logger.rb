@@ -1,7 +1,7 @@
 class AuditLogger
   def log_report(post, reporter, metadata: {})
     log(
-      action: 'report',
+      action: "report",
       post: post,
       user: reporter,
       metadata: metadata
@@ -10,7 +10,7 @@ class AuditLogger
 
   def log_redaction(post, reason:, admin: nil, metadata: {})
     log(
-      action: 'redact',
+      action: "redact",
       post: post,
       user: admin,
       admin: admin,
@@ -20,7 +20,7 @@ class AuditLogger
 
   def log_unredaction(post, admin:, metadata: {})
     log(
-      action: 'unredact',
+      action: "unredact",
       post: post,
       user: admin,
       admin: admin,
@@ -45,4 +45,3 @@ class AuditLogger
     )
   end
 end
-

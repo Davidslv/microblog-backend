@@ -44,4 +44,3 @@ users.each do |user|
 end
 
 puts "Solid database users setup complete!"
-

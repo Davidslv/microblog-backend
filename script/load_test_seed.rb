@@ -118,7 +118,7 @@ users.each_with_index do |user, user_index|
         "#{Faker::Quote.most_interesting_man_in_the_world} #{Faker::Lorem.sentence(word_count: rand(5..10))}",
         "#{Faker::Movie.quote} #{Faker::Lorem.sentence(word_count: rand(3..8))}",
         "#{Faker::Hacker.say_something_smart} #{Faker::Lorem.sentence(word_count: rand(5..12))}",
-        "#{Faker::Quote.yoda} #{Faker::Lorem.sentence(word_count: rand(3..8))}",
+        "#{Faker::Quote.yoda} #{Faker::Lorem.sentence(word_count: rand(3..8))}"
       ]
       post_options.sample[0..199]
     end

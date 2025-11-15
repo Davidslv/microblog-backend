@@ -24,11 +24,11 @@ Rails.application.routes.draw do
       post "/refresh", to: "sessions#refresh"
 
       # Users
-      resources :users, only: [:show, :create, :update, :destroy]
+      resources :users, only: [ :show, :create, :update, :destroy ]
       post "/signup", to: "users#create", as: "api_signup"
 
       # Posts
-      resources :posts, only: [:index, :show, :create] do
+      resources :posts, only: [ :index, :show, :create ] do
         member do
           get :replies
           post :report

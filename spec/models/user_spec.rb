@@ -160,7 +160,7 @@ RSpec.describe User, type: :model do
 
       it "does not include posts from non-followed users" do
         feed_posts = user.feed_posts.to_a
-        non_followed_posts = Post.where.not(author_id: [user.id, followed_user.id])
+        non_followed_posts = Post.where.not(author_id: [ user.id, followed_user.id ])
         expect(feed_posts.map(&:id)).not_to include(*non_followed_posts.pluck(:id))
       end
 

@@ -1,6 +1,6 @@
 class JwtService
-  SECRET_KEY = Rails.application.credentials.secret_key_base || Rails.application.secret_key_base || 'development-secret-key-change-in-production'
-  ALGORITHM = 'HS256'
+  SECRET_KEY = Rails.application.credentials.secret_key_base || Rails.application.secret_key_base || "development-secret-key-change-in-production"
+  ALGORITHM = "HS256"
   EXPIRATION_TIME = 24.hours
 
   def self.encode(payload)
@@ -20,4 +20,3 @@ class JwtService
     decode(token).present?
   end
 end
-

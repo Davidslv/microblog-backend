@@ -139,4 +139,3 @@ RSpec.describe "Moderation Performance", type: :request do
     end
   end
 end
-

@@ -42,7 +42,7 @@ RSpec.describe "Moderation End-to-End", type: :request do
       expect(post_obj.redacted?).to be false
 
       # Users 3-6 also report
-      [user3, user4, user5, user6].each do |user|
+      [ user3, user4, user5, user6 ].each do |user|
         token = get_token(user)
         post "#{api_base}/posts/#{post_obj.id}/report",
              headers: { "Authorization" => "Bearer #{token}" }
@@ -64,4 +64,3 @@ RSpec.describe "Moderation End-to-End", type: :request do
     end
   end
 end
-

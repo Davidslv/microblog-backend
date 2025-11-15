@@ -16,4 +16,3 @@ class BackfillCounterCachesJob < ApplicationJob
     Rails.logger.info "Enqueued counter cache backfill jobs for all counter types"
   end
 end
-

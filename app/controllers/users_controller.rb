@@ -2,7 +2,7 @@ class UsersController < ApplicationController
   before_action :set_user, only: [ :show, :edit, :update, :destroy ]
   before_action :require_owner, only: [ :edit, :update, :destroy ]
   # Allow public access to show and signup without login
-  skip_before_action :require_login, only: [:show, :new, :create]
+  skip_before_action :require_login, only: [ :show, :new, :create ]
 
   def new
     # Redirect if already logged in

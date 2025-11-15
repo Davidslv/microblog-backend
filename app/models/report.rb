@@ -8,4 +8,3 @@ class Report < ApplicationRecord
   scope :by_reporter, ->(reporter) { where(reporter: reporter) }
   scope :recent, -> { order(created_at: :desc) }
 end
-

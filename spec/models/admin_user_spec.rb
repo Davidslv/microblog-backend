@@ -47,4 +47,3 @@ RSpec.describe AdminUser, type: :model do
     end
   end
 end
-

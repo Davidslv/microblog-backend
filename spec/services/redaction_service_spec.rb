@@ -191,4 +191,3 @@ RSpec.describe RedactionService do
     end
   end
 end
-

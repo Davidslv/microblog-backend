@@ -25,4 +25,3 @@ class ModerationPolicy
     can_moderate?
   end
 end
-

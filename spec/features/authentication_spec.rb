@@ -182,4 +182,3 @@ RSpec.describe "Authentication Flow", type: :feature do
     end
   end
 end
-

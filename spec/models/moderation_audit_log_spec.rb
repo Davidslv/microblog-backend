@@ -76,4 +76,3 @@ RSpec.describe ModerationAuditLog, type: :model do
     end
   end
 end
-

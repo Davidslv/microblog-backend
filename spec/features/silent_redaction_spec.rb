@@ -19,8 +19,8 @@ RSpec.describe "Silent Redaction", type: :request do
 
       # User follows author to see posts
       user.follow(post_author)
-      FeedEntry.bulk_insert_for_post(normal_post, [user.id])
-      FeedEntry.bulk_insert_for_post(redacted_post, [user.id])
+      FeedEntry.bulk_insert_for_post(normal_post, [ user.id ])
+      FeedEntry.bulk_insert_for_post(redacted_post, [ user.id ])
 
       get "#{api_base}/posts",
           headers: { "Authorization" => "Bearer #{token}" }
@@ -51,8 +51,8 @@ RSpec.describe "Silent Redaction", type: :request do
 
       # Author follows themselves
       post_author.follow(post_author)
-      FeedEntry.bulk_insert_for_post(normal_post, [post_author.id])
-      FeedEntry.bulk_insert_for_post(redacted_post, [post_author.id])
+      FeedEntry.bulk_insert_for_post(normal_post, [ post_author.id ])
+      FeedEntry.bulk_insert_for_post(redacted_post, [ post_author.id ])
 
       get "#{api_base}/posts",
           headers: { "Authorization" => "Bearer #{token}" }
@@ -115,4 +115,3 @@ RSpec.describe "Silent Redaction", type: :request do
     end
   end
 end
-

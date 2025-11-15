@@ -198,4 +198,3 @@ RSpec.describe "Moderation Security", type: :request do
     end
   end
 end
-

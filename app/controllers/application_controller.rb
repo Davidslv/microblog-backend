@@ -27,11 +27,11 @@ class ApplicationController < ActionController::Base
 
   # Development-only: Quick login for load testing
   # Skip authentication check for this route
-  skip_before_action :require_login, only: [:dev_login]
-  
+  skip_before_action :require_login, only: [ :dev_login ]
+
   def dev_login
     return head :forbidden unless Rails.env.development?
-    
+
     user = User.find_by(id: params[:user_id])
     if user
       session[:user_id] = user.id
